@@ -5,20 +5,6 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.decompose.value.update
 import com.arkivanov.essenty.lifecycle.doOnResume
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.checking_for_updates
-import glossary.shared.generated.resources.clear_reviewed_failed
-import glossary.shared.generated.resources.clear_reviewed_success
-import glossary.shared.generated.resources.error_checking_updates
-import glossary.shared.generated.resources.glossary_upload_failed
-import glossary.shared.generated.resources.glossary_uploaded_successfully
-import glossary.shared.generated.resources.join_glossary_progress
-import glossary.shared.generated.resources.join_glossary_success
-import glossary.shared.generated.resources.no_updates_found
-import glossary.shared.generated.resources.updates_found
-import glossary.shared.generated.resources.upload_pending_failed
-import glossary.shared.generated.resources.upload_pending_success
-import glossary.shared.generated.resources.uploading_glossary
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.exists
 import io.github.vinceglb.filekit.size
@@ -53,6 +39,20 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.checking_for_updates
+import spotlight.shared.generated.resources.clear_reviewed_failed
+import spotlight.shared.generated.resources.clear_reviewed_success
+import spotlight.shared.generated.resources.error_checking_updates
+import spotlight.shared.generated.resources.glossary_upload_failed
+import spotlight.shared.generated.resources.glossary_uploaded_successfully
+import spotlight.shared.generated.resources.join_glossary_progress
+import spotlight.shared.generated.resources.join_glossary_success
+import spotlight.shared.generated.resources.no_updates_found
+import spotlight.shared.generated.resources.updates_found
+import spotlight.shared.generated.resources.upload_pending_failed
+import spotlight.shared.generated.resources.upload_pending_success
+import spotlight.shared.generated.resources.uploading_glossary
 
 interface KeyTermsListComponent : DrawerContext {
     val model: Value<Model>

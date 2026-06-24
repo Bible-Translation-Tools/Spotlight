@@ -1,10 +1,6 @@
 package org.bibletranslationtools.glossary.domain
 
 import app.cash.sqldelight.db.AfterVersion
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.init_catalog
-import glossary.shared.generated.resources.init_languages
-import glossary.shared.generated.resources.init_resources
 import org.bibletranslationtools.glossary.GlossaryDatabase
 import org.bibletranslationtools.glossary.Utils
 import org.bibletranslationtools.glossary.data.Language
@@ -18,6 +14,10 @@ import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import org.bibletranslationtools.glossary.platform.createSqlDriver
 import org.bibletranslationtools.glossary.toLocalDateTime
 import org.jetbrains.compose.resources.getString
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.init_catalog
+import spotlight.shared.generated.resources.init_languages
+import spotlight.shared.generated.resources.init_resources
 import kotlin.time.ExperimentalTime
 
 class InitApp(

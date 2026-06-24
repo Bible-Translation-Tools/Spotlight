@@ -1,16 +1,16 @@
 package org.bibletranslationtools.glossary.ui.components
 
 import androidx.compose.runtime.Composable
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.user_role_admin
-import glossary.shared.generated.resources.user_role_admin_desc
-import glossary.shared.generated.resources.user_role_editor
-import glossary.shared.generated.resources.user_role_editor_desc
-import glossary.shared.generated.resources.user_role_owner
-import glossary.shared.generated.resources.user_role_viewer
-import glossary.shared.generated.resources.user_role_viewer_desc
 import org.bibletranslationtools.glossary.data.api.UserRole
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.user_role_admin
+import spotlight.shared.generated.resources.user_role_admin_desc
+import spotlight.shared.generated.resources.user_role_editor
+import spotlight.shared.generated.resources.user_role_editor_desc
+import spotlight.shared.generated.resources.user_role_owner
+import spotlight.shared.generated.resources.user_role_viewer
+import spotlight.shared.generated.resources.user_role_viewer_desc
 
 @Composable
 fun UserRole.localizedName(): String {

@@ -30,12 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.edited_terms
-import glossary.shared.generated.resources.new_terms
-import glossary.shared.generated.resources.pending_phrases
-import glossary.shared.generated.resources.review_changes
-import glossary.shared.generated.resources.words_total
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.data.api.PendingPhrase
 import org.bibletranslationtools.glossary.data.api.UserRole
@@ -49,6 +43,12 @@ import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.edited_terms
+import spotlight.shared.generated.resources.new_terms
+import spotlight.shared.generated.resources.pending_phrases
+import spotlight.shared.generated.resources.review_changes
+import spotlight.shared.generated.resources.words_total
 
 @Composable
 fun ReviewChangesScreen(component: ReviewChangesComponent) {

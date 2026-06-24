@@ -35,8 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.burnoo.compose.remembersetting.rememberIntSetting
 import dev.burnoo.compose.remembersetting.rememberStringSetting
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.loading
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.data.RefOption
 import org.bibletranslationtools.glossary.domain.Settings
@@ -49,6 +47,8 @@ import org.bibletranslationtools.glossary.ui.data.LineHeightSetting
 import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.loading
 
 @OptIn(InternalTextApi::class, ExperimentalMaterial3Api::class)
 @Composable

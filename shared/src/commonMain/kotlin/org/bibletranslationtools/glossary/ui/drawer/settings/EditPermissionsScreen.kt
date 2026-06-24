@@ -25,9 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.active_users
-import glossary.shared.generated.resources.edit_permissions
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.data.api.GlossaryUser
 import org.bibletranslationtools.glossary.ui.components.EditPermissionsBar
@@ -39,6 +36,9 @@ import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.active_users
+import spotlight.shared.generated.resources.edit_permissions
 
 @Composable
 fun EditPermissionsScreen(component: EditPermissionsComponent) {

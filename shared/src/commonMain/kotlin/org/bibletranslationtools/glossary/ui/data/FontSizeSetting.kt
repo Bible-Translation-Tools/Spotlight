@@ -3,11 +3,11 @@ package org.bibletranslationtools.glossary.ui.data
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.large
-import glossary.shared.generated.resources.medium
-import glossary.shared.generated.resources.small
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.large
+import spotlight.shared.generated.resources.medium
+import spotlight.shared.generated.resources.small
 
 class FontSizeSetting(
     override val name: String,

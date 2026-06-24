@@ -47,14 +47,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.approve
-import glossary.shared.generated.resources.reject
 import io.github.petertrr.diffutils.diff
 import io.github.petertrr.diffutils.patch.DeltaType
 import org.bibletranslationtools.glossary.data.api.PendingPhrase
 import org.bibletranslationtools.glossary.data.api.ReviewStatus
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.approve
+import spotlight.shared.generated.resources.reject
 
 @Composable
 fun ReviewPendingPhraseBar(

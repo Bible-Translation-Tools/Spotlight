@@ -3,10 +3,6 @@ package org.bibletranslationtools.glossary.ui.drawer.settings
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.essenty.lifecycle.doOnResume
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.create_glossary_error
-import glossary.shared.generated.resources.downloading_wait
-import glossary.shared.generated.resources.resource_not_found
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,6 +27,10 @@ import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.create_glossary_error
+import spotlight.shared.generated.resources.downloading_wait
+import spotlight.shared.generated.resources.resource_not_found
 
 interface CreateGlossaryComponent : DrawerContext {
     val model: Value<Model>

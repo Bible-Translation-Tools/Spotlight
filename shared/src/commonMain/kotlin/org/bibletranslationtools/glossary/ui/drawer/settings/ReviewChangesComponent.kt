@@ -5,9 +5,6 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.decompose.value.update
 import com.arkivanov.essenty.lifecycle.doOnResume
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.loading_wait
-import glossary.shared.generated.resources.sending_review
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +25,9 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.loading_wait
+import spotlight.shared.generated.resources.sending_review
 
 interface ReviewChangesComponent : DrawerContext {
     val model: Value<Model>

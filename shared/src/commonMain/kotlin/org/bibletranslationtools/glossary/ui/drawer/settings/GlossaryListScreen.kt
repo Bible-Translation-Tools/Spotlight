@@ -38,13 +38,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.add_create_glossary
-import glossary.shared.generated.resources.add_glossary
-import glossary.shared.generated.resources.available_glossaries
-import glossary.shared.generated.resources.create_glossary
-import glossary.shared.generated.resources.glossaries_unavailable
-import glossary.shared.generated.resources.import_glossary_manually
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import kotlinx.coroutines.launch
@@ -53,6 +46,13 @@ import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
 import org.bibletranslationtools.glossary.ui.dialogs.ProgressDialog
 import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.add_create_glossary
+import spotlight.shared.generated.resources.add_glossary
+import spotlight.shared.generated.resources.available_glossaries
+import spotlight.shared.generated.resources.create_glossary
+import spotlight.shared.generated.resources.glossaries_unavailable
+import spotlight.shared.generated.resources.import_glossary_manually
 
 @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable

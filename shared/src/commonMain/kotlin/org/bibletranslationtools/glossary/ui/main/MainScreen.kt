@@ -49,11 +49,6 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.burnoo.compose.remembersetting.rememberIntSetting
 import dev.burnoo.compose.remembersetting.rememberStringSetting
 import dev.burnoo.compose.remembersetting.rememberStringSettingOrNull
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.book_icon
-import glossary.shared.generated.resources.glossary
-import glossary.shared.generated.resources.read
-import glossary.shared.generated.resources.settings
 import org.bibletranslationtools.glossary.Utils
 import org.bibletranslationtools.glossary.domain.Settings
 import org.bibletranslationtools.glossary.platform.showStatusBars
@@ -67,6 +62,11 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.book_icon
+import spotlight.shared.generated.resources.glossary
+import spotlight.shared.generated.resources.read
+import spotlight.shared.generated.resources.settings
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable

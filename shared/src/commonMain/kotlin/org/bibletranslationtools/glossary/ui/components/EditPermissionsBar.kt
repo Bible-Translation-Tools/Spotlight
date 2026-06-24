@@ -32,13 +32,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.cancel
-import glossary.shared.generated.resources.edit_user_permission
-import glossary.shared.generated.resources.save_changes
 import org.bibletranslationtools.glossary.data.api.GlossaryUser
 import org.bibletranslationtools.glossary.data.api.UserRole
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.cancel
+import spotlight.shared.generated.resources.edit_user_permission
+import spotlight.shared.generated.resources.save_changes
 
 @Composable
 fun EditPermissionsBar(

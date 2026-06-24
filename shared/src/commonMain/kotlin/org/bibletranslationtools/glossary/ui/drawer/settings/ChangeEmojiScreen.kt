@@ -28,15 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.change_emoji
-import glossary.shared.generated.resources.emoji_activity
-import glossary.shared.generated.resources.emoji_food
-import glossary.shared.generated.resources.emoji_gestures
-import glossary.shared.generated.resources.emoji_nature
-import glossary.shared.generated.resources.emoji_objects
-import glossary.shared.generated.resources.emoji_smileys
-import glossary.shared.generated.resources.emoji_travel
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.ui.components.EmojiGridItem
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
@@ -44,6 +35,15 @@ import org.bibletranslationtools.glossary.ui.dialogs.ProgressDialog
 import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.change_emoji
+import spotlight.shared.generated.resources.emoji_activity
+import spotlight.shared.generated.resources.emoji_food
+import spotlight.shared.generated.resources.emoji_gestures
+import spotlight.shared.generated.resources.emoji_nature
+import spotlight.shared.generated.resources.emoji_objects
+import spotlight.shared.generated.resources.emoji_smileys
+import spotlight.shared.generated.resources.emoji_travel
 
 private data class EmojiCategory(
     val title: StringResource,

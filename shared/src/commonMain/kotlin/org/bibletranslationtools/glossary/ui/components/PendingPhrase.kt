@@ -19,16 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.created_by
-import glossary.shared.generated.resources.edited_by
-import glossary.shared.generated.resources.percent_approved
-import glossary.shared.generated.resources.percent_rejected
-import glossary.shared.generated.resources.percent_undecided
-import glossary.shared.generated.resources.review
 import org.bibletranslationtools.glossary.data.api.PendingPhrase
 import org.bibletranslationtools.glossary.data.api.ReviewStatus
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.created_by
+import spotlight.shared.generated.resources.edited_by
+import spotlight.shared.generated.resources.percent_approved
+import spotlight.shared.generated.resources.percent_rejected
+import spotlight.shared.generated.resources.percent_undecided
+import spotlight.shared.generated.resources.review
 import kotlin.math.roundToInt
 
 @Composable

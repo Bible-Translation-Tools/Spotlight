@@ -4,22 +4,23 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.decompose.value.update
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.loading_glossary
-import glossary.shared.generated.resources.loading_resources
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.domain.InitApp
+import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.loading_glossary
+import spotlight.shared.generated.resources.loading_resources
+import kotlin.time.Duration.Companion.milliseconds
 
 interface SplashComponent {
     val model: Value<Model>
@@ -66,7 +67,7 @@ class DefaultSplashComponent(
             message = getString(Res.string.loading_resources)
         )
 
-        delay(2000)
+        delay(2000.milliseconds)
 
         withContext(Dispatchers.Default) {
             val (lang, type) = resourceId.split("_")

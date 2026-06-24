@@ -22,11 +22,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.target_language_needed
 import org.bibletranslationtools.glossary.data.Phrase
 import org.bibletranslationtools.glossary.data.api.ReviewStatus
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.target_language_needed
 
 @Composable
 fun PhraseItem(

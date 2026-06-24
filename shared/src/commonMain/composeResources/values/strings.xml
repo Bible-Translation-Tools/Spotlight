@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <resources>
-    <string name="app_name">Glossary</string>
+    <string name="app_name">Spotlight</string>
     <string name="init_resources">Initializing resources...</string>
     <string name="init_languages">Initializing languages...</string>
     <string name="init_catalog">Initializing catalog...</string>
