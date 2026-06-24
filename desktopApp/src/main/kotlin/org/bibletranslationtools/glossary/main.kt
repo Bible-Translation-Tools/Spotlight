@@ -11,11 +11,11 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.extensions.compose.lifecycle.LifecycleController
 import com.arkivanov.essenty.backhandler.BackDispatcher
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.app_name
 import org.bibletranslationtools.glossary.di.initKoin
 import org.bibletranslationtools.glossary.ui.DefaultRootComponent
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.app_name
 
 fun main() {
     AppLogger.setupGlobalExceptionHandler()
