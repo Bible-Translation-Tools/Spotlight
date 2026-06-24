@@ -3,8 +3,6 @@ name: Android Release
 
 on:
   push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
@@ -36,6 +34,15 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
+      - name: Read app version
+        id: app_version
+        run: |
+          VERSION_NAME=$(grep -E '^glossary-name' gradle/libs.versions.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          VERSION_CODE=$(grep -E '^glossary-version' gradle/libs.versions.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          ARTIFACT_BASE="spotlight-${VERSION_NAME}+${{ github.run_number }}-v${VERSION_CODE}-android"
+          echo "ARTIFACT_BASE=$ARTIFACT_BASE" >> "$GITHUB_ENV"
+          echo "Artifact base name: $ARTIFACT_BASE"
 
       - name: Test with Gradle
         run: ./gradlew test
@@ -84,10 +91,20 @@ jobs:
           echo "Found signed APK: $APK_PATH"
           echo "Found signed AAB: $AAB_PATH"
 
-          cp "$APK_PATH" ./spotlight-${{ github.ref_name }}.apk
-          cp "$AAB_PATH" ./spotlight-${{ github.ref_name }}.aab
+          cp "$APK_PATH" "./${ARTIFACT_BASE}.apk"
+          cp "$AAB_PATH" "./${ARTIFACT_BASE}.aab"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_BASE }}
+          path: |
+            ./${{ env.ARTIFACT_BASE }}.apk
+            ./${{ env.ARTIFACT_BASE }}.aab
+          if-no-files-found: error
 
       - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           gh release create "${{ github.ref_name }}" \
             --draft \
@@ -99,17 +116,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK Asset
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           gh release upload "${{ github.ref_name }}" \
-            ./spotlight-${{ github.ref_name }}.apk \
+            "./${ARTIFACT_BASE}.apk" \
             --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload AAB Asset
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           gh release upload "${{ github.ref_name }}" \
-            ./spotlight-${{ github.ref_name }}.aab \
+            "./${ARTIFACT_BASE}.aab" \
             --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
