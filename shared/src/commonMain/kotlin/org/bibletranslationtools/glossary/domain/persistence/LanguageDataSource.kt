@@ -10,6 +10,8 @@ interface LanguageDataSource {
     suspend fun getTargetLanguages(): List<LanguageEntity>
     suspend fun insert(language: LanguageEntity)
     fun insertInTransaction(language: LanguageEntity)
+    fun getReferencedSlugs(): List<String>
+    fun deleteBySlugInTransaction(slug: String)
     fun transaction(block: () -> Unit)
 }
 
@@ -42,6 +44,14 @@ class LanguageDataSourceImpl(db: GlossaryDatabase): LanguageDataSource {
             direction = language.direction,
             gw = language.gw
         )
+    }
+
+    override fun getReferencedSlugs(): List<String> {
+        return queries.getReferencedSlugs().executeAsList()
+    }
+
+    override fun deleteBySlugInTransaction(slug: String) {
+        queries.deleteBySlug(slug)
     }
 
     override fun transaction(block: () -> Unit) {

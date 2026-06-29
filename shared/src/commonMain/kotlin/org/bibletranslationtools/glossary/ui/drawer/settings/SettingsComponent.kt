@@ -29,6 +29,7 @@ interface SettingsComponent: DrawerContext {
         data class ImportGlossary(val component: ImportGlossaryComponent) : Child
         data class EditPermissions(val component: EditPermissionsComponent) : Child
         data class ReviewChanges(val component: ReviewChangesComponent) : Child
+        data class AdvancedSettings(val component: AdvancedSettingsComponent) : Child
         data class Login(val component: LoginComponent) : Child
         data class ChangeEmoji(val component: ChangeEmojiComponent) : Child
     }
@@ -98,6 +99,9 @@ class DefaultSettingsComponent(
                     },
                     onReviewChanges = {
                         navigation.bringToFront(Config.ReviewChanges)
+                    },
+                    onAdvancedSettings = {
+                        navigation.bringToFront(Config.AdvancedSettings)
                     }
                 )
             )
@@ -164,6 +168,12 @@ class DefaultSettingsComponent(
                     parentContext = this
                 )
             )
+            is Config.AdvancedSettings -> SettingsComponent.Child.AdvancedSettings(
+                DefaultAdvancedSettingsComponent(
+                    componentContext = context,
+                    parentContext = this
+                )
+            )
             is Config.Login -> SettingsComponent.Child.Login(
                 DefaultLoginComponent(
                     componentContext = context,
@@ -215,6 +225,8 @@ class DefaultSettingsComponent(
         data object EditPermissions : Config
         @Serializable
         data object ReviewChanges : Config
+        @Serializable
+        data object AdvancedSettings : Config
         @Serializable
         data object Login : Config
         @Serializable

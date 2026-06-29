@@ -8,6 +8,7 @@ import org.bibletranslationtools.glossary.domain.FileSystemProviderImpl
 import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.GlossaryApiImpl
 import org.bibletranslationtools.glossary.domain.InitApp
+import org.bibletranslationtools.glossary.domain.usecases.UpdateLanguages
 import org.bibletranslationtools.glossary.domain.createHttpClient
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryDataSource
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryDataSourceImpl
@@ -61,6 +62,7 @@ val sharedModule = module {
     singleOf(::ExportGlossary)
     singleOf(::ImportGlossary)
     singleOf(::MergePendingPhrases)
+    single { UpdateLanguages(get(), createHttpClient(httpClientEngine)) }
 
     factoryOf(::InitApp)
 

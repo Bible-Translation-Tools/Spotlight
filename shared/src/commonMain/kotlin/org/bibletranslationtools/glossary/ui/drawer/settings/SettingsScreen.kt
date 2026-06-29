@@ -19,6 +19,7 @@ fun SettingsScreen(component: SettingsComponent) {
             is SettingsComponent.Child.ImportGlossary -> ImportGlossaryScreen(child.component)
             is SettingsComponent.Child.EditPermissions -> EditPermissionsScreen(child.component)
             is SettingsComponent.Child.ReviewChanges -> ReviewChangesScreen(child.component)
+            is SettingsComponent.Child.AdvancedSettings -> AdvancedSettingsScreen(child.component)
             is SettingsComponent.Child.Login -> LoginScreen(child.component)
             is SettingsComponent.Child.ChangeEmoji -> ChangeEmojiScreen(child.component)
         }

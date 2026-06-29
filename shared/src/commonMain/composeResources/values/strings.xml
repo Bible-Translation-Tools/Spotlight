@@ -184,4 +184,11 @@
     <string name="add_another_phrase">Add Another Word</string>
     <string name="return_to_glosssary">Return to Glossary</string>
     <string name="target_language_needed">Target Language Needed</string>
+    <string name="advanced_settings">Advanced Settings</string>
+    <string name="languages_settings">Languages</string>
+    <string name="download_langnames">Download langnames.json</string>
+    <string name="import_langnames">Import langnames.json</string>
+    <string name="updating_languages">Updating languages…</string>
+    <string name="languages_updated">Languages updated. %1$d have been added.</string>
+    <string name="languages_update_failed">Failed to update languages</string>
 </resources>

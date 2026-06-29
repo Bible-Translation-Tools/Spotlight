@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.FormatLineSpacing
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -69,6 +70,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import spotlight.shared.generated.resources.Res
 import spotlight.shared.generated.resources.about_app
+import spotlight.shared.generated.resources.advanced_settings
 import spotlight.shared.generated.resources.dark_mode
 import spotlight.shared.generated.resources.data_privacy
 import spotlight.shared.generated.resources.edit_account
@@ -495,6 +497,11 @@ fun SettingsListScreen(component: SettingsListComponent) {
                         SettingsSection(
                             title = stringResource(Res.string.other_settings)
                         ) {
+                            SettingsClickableItem(
+                                icon = Icons.Default.Construction,
+                                text = stringResource(Res.string.advanced_settings),
+                                onClick = component::advancedSettings
+                            )
                             SettingsClickableItem(
                                 icon = Icons.Default.Info,
                                 text = stringResource(Res.string.about_app),
