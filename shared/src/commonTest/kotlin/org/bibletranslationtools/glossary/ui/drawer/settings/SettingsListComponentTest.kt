@@ -62,6 +62,7 @@ class SettingsListComponentTest {
         var onLogoutCalled = false
         var onEditPermissionsCalled = false
         var onReviewChangesCalled = false
+        var onAdvancedSettingsCalled = false
 
         val componentContext = DefaultComponentContext(lifecycle = LifecycleRegistry())
         val component = DefaultSettingsListComponent(
@@ -73,7 +74,8 @@ class SettingsListComponentTest {
             onNavigateChangeEmoji = { onNavigateChangeEmojiCalled = true },
             onLogout = { onLogoutCalled = true },
             onEditPermissions = { onEditPermissionsCalled = true },
-            onReviewChanges = { onReviewChangesCalled = true }
+            onReviewChanges = { onReviewChangesCalled = true },
+            onAdvancedSettings = { onAdvancedSettingsCalled = true }
         )
 
         component.createGlossary()
@@ -96,6 +98,9 @@ class SettingsListComponentTest {
 
         component.reviewChanges()
         assertTrue(onReviewChangesCalled)
+
+        component.advancedSettings()
+        assertTrue(onAdvancedSettingsCalled)
     }
 
     @Test
@@ -119,7 +124,8 @@ class SettingsListComponentTest {
             onNavigateChangeEmoji = {},
             onLogout = {},
             onEditPermissions = {},
-            onReviewChanges = {}
+            onReviewChanges = {},
+            onAdvancedSettings = {}
         )
 
         component.loadPendingPhrases(glossary)
@@ -158,7 +164,8 @@ class SettingsListComponentTest {
             onNavigateChangeEmoji = {},
             onLogout = {},
             onEditPermissions = {},
-            onReviewChanges = {}
+            onReviewChanges = {},
+            onAdvancedSettings = {}
         )
 
         component.loadPendingPhrases(glossary)

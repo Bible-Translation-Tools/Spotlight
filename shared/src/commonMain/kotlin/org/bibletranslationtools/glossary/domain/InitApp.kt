@@ -76,27 +76,29 @@ class InitApp(
 
         val excludedLanguages = listOf("el-x-koine")
 
-        catalog.languages.filter { !excludedLanguages.contains(it.identifier) }
-            .forEach { lang ->
-                lang.resources.filter { it.subject.lowercase() == "bible" }
-                .forEach { res ->
-                    val resource = Resource(
-                        lang = lang.identifier,
-                        type = res.identifier,
-                        version = res.version ?: "v1",
-                        format = res.formats.first().format,
-                         url = res.formats.first().url,
-                        filename = "",
-                        createdAt = res.issued.toLocalDateTime(),
-                        modifiedAt = res.modified.toLocalDateTime()
-                    )
-                    try {
-                        resourceDataSource.insert(resource.toEntity())
-                    } catch (e: Exception) {
-                        this.logE("Failed to insert resource during initialization", e)
+        resourceDataSource.transaction {
+            catalog.languages.filter { !excludedLanguages.contains(it.identifier) }
+                .forEach { lang ->
+                    lang.resources.filter { it.subject.lowercase() == "bible" }
+                    .forEach { res ->
+                        val resource = Resource(
+                            lang = lang.identifier,
+                            type = res.identifier,
+                            version = res.version ?: "v1",
+                            format = res.formats.first().format,
+                             url = res.formats.first().url,
+                            filename = "",
+                            createdAt = res.issued.toLocalDateTime(),
+                            modifiedAt = res.modified.toLocalDateTime()
+                        )
+                        try {
+                            resourceDataSource.insertInTransaction(resource.toEntity())
+                        } catch (e: Exception) {
+                            this.logE("Failed to insert resource during initialization", e)
+                        }
                     }
                 }
-            }
+        }
     }
 
     private suspend fun initResources(onProgressMessage: (String) -> Unit) {
@@ -113,5 +115,14 @@ class InitApp(
                 )
             }
         }
+    }
+
+    /**
+     * Re-provisions the bundled default (en/ulb) resource's local filename.
+     * Idempotent - safe to call any time the filename is unexpectedly blank,
+     * e.g. if a catalog sync ever raced ahead of first-run provisioning.
+     */
+    suspend fun ensureDefaultResource() {
+        initResources {}
     }
 }

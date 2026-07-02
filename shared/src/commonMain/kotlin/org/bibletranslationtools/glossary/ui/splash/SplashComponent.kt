@@ -85,6 +85,15 @@ class DefaultSplashComponent(
             }
 
             if (filename == null) {
+                // filename can go missing if a catalog sync ever raced ahead of
+                // the bundled-resource provisioning step - repair by
+                // re-extracting the bundled default before giving up.
+                initAppUseCase.ensureDefaultResource()
+                dbRes = glossaryRepository.getResource("en", "ulb")
+                filename = dbRes?.filename?.ifEmpty { null }
+            }
+
+            if (dbRes == null || filename == null) {
                 throw IllegalArgumentException("Resource file not found.")
             }
 

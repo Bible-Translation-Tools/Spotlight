@@ -191,4 +191,9 @@
     <string name="updating_languages">Updating languages…</string>
     <string name="languages_updated">Languages updated. %1$d have been added.</string>
     <string name="languages_update_failed">Failed to update languages</string>
+    <string name="catalog_settings">Catalog</string>
+    <string name="update_catalog">Update Catalog</string>
+    <string name="updating_catalog">Updating catalog…</string>
+    <string name="catalog_updated">Catalog updated. %1$d resources have been added.</string>
+    <string name="catalog_update_failed">Failed to update catalog</string>
 </resources>

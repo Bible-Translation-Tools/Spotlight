@@ -9,6 +9,8 @@ interface ResourceDataSource {
     suspend fun getByLang(lang: String): List<ResourceEntity>
     suspend fun getByLangType(lang: String, type: String): ResourceEntity?
     suspend fun insert(resource: ResourceEntity)
+    fun insertInTransaction(resource: ResourceEntity)
+    fun transaction(block: () -> Unit)
     suspend fun delete(id: Long)
 }
 
@@ -30,6 +32,10 @@ class ResourceDataSourceImpl(db: GlossaryDatabase): ResourceDataSource {
     }
 
     override suspend fun insert(resource: ResourceEntity) {
+        insertInTransaction(resource)
+    }
+
+    override fun insertInTransaction(resource: ResourceEntity) {
         queries.insert(
             lang = resource.lang,
             type = resource.type,
@@ -40,6 +46,12 @@ class ResourceDataSourceImpl(db: GlossaryDatabase): ResourceDataSource {
             createdAt = resource.createdAt,
             modifiedAt = resource.modifiedAt
         ).executeAsOne()
+    }
+
+    override fun transaction(block: () -> Unit) {
+        queries.transaction {
+            block()
+        }
     }
 
     override suspend fun delete(id: Long) {

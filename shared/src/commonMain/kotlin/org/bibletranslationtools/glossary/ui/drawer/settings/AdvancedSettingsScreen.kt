@@ -29,9 +29,11 @@ import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.jetbrains.compose.resources.stringResource
 import spotlight.shared.generated.resources.Res
 import spotlight.shared.generated.resources.advanced_settings
+import spotlight.shared.generated.resources.catalog_settings
 import spotlight.shared.generated.resources.download_langnames
 import spotlight.shared.generated.resources.import_langnames
 import spotlight.shared.generated.resources.languages_settings
+import spotlight.shared.generated.resources.update_catalog
 
 @Composable
 fun AdvancedSettingsScreen(component: AdvancedSettingsComponent) {
@@ -80,6 +82,18 @@ fun AdvancedSettingsScreen(component: AdvancedSettingsComponent) {
                         }
                     }
                 }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SettingsSection(
+            title = stringResource(Res.string.catalog_settings)
+        ) {
+            SettingsClickableItem(
+                icon = Icons.Default.Download,
+                text = stringResource(Res.string.update_catalog),
+                onClick = component::downloadCatalog
             )
         }
     }

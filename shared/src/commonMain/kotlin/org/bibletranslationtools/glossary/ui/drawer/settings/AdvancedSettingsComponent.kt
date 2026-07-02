@@ -12,16 +12,21 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.bibletranslationtools.glossary.data.Progress
+import org.bibletranslationtools.glossary.domain.usecases.UpdateCatalog
 import org.bibletranslationtools.glossary.domain.usecases.UpdateLanguages
 import org.bibletranslationtools.glossary.logE
 import org.bibletranslationtools.glossary.ui.drawer.DrawerComponent
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.catalog_update_failed
+import spotlight.shared.generated.resources.catalog_updated
 import spotlight.shared.generated.resources.languages_update_failed
 import spotlight.shared.generated.resources.languages_updated
+import spotlight.shared.generated.resources.updating_catalog
 import spotlight.shared.generated.resources.updating_languages
 
 interface AdvancedSettingsComponent : DrawerContext {
@@ -34,6 +39,7 @@ interface AdvancedSettingsComponent : DrawerContext {
 
     fun downloadLanguages()
     fun importLanguages(file: PlatformFile)
+    fun downloadCatalog()
     fun clearSnackBarMessage()
 }
 
@@ -43,6 +49,7 @@ class DefaultAdvancedSettingsComponent(
 ) : DrawerComponent(componentContext, parentContext), AdvancedSettingsComponent, KoinComponent {
 
     private val updateLanguages: UpdateLanguages by inject()
+    private val updateCatalog: UpdateCatalog by inject()
 
     private val componentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val _model = MutableValue(AdvancedSettingsComponent.Model())
@@ -55,27 +62,52 @@ class DefaultAdvancedSettingsComponent(
     }
 
     override fun downloadLanguages() {
-        updateLanguages { updateLanguages.fromUrl() }
+        runUpdate(
+            progressMessage = Res.string.updating_languages,
+            successMessage = Res.string.languages_updated,
+            failureMessage = Res.string.languages_update_failed,
+            logTag = "Update languages failed"
+        ) { updateLanguages.fromUrl() }
     }
 
     override fun importLanguages(file: PlatformFile) {
-        updateLanguages { updateLanguages.fromFile(file) }
+        runUpdate(
+            progressMessage = Res.string.updating_languages,
+            successMessage = Res.string.languages_updated,
+            failureMessage = Res.string.languages_update_failed,
+            logTag = "Update languages failed"
+        ) { updateLanguages.fromFile(file) }
     }
 
-    private fun updateLanguages(block: suspend () -> Int) {
+    override fun downloadCatalog() {
+        runUpdate(
+            progressMessage = Res.string.updating_catalog,
+            successMessage = Res.string.catalog_updated,
+            failureMessage = Res.string.catalog_update_failed,
+            logTag = "Update catalog failed"
+        ) { updateCatalog.fromUrl() }
+    }
+
+    private fun runUpdate(
+        progressMessage: StringResource,
+        successMessage: StringResource,
+        failureMessage: StringResource,
+        logTag: String,
+        block: suspend () -> Int
+    ) {
         componentScope.launch {
             val progress = Progress(
                 value = -1f,
-                message = getString(Res.string.updating_languages)
+                message = getString(progressMessage)
             )
             _model.update { it.copy(progress = progress) }
 
             val message = try {
                 val count = withContext(Dispatchers.IO) { block() }
-                getString(Res.string.languages_updated, count)
+                getString(successMessage, count)
             } catch (e: Exception) {
-                this@DefaultAdvancedSettingsComponent.logE("Update languages failed", e)
-                getString(Res.string.languages_update_failed)
+                this@DefaultAdvancedSettingsComponent.logE(logTag, e)
+                getString(failureMessage)
             }
 
             _model.update {
