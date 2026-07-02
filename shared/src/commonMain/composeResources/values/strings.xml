@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <resources>
-    <string name="app_name">Glossary</string>
+    <string name="app_name">Spotlight</string>
     <string name="init_resources">Initializing resources...</string>
     <string name="init_languages">Initializing languages...</string>
     <string name="init_catalog">Initializing catalog...</string>
@@ -184,4 +184,16 @@
     <string name="add_another_phrase">Add Another Word</string>
     <string name="return_to_glosssary">Return to Glossary</string>
     <string name="target_language_needed">Target Language Needed</string>
+    <string name="advanced_settings">Advanced Settings</string>
+    <string name="languages_settings">Languages</string>
+    <string name="download_langnames">Download langnames.json</string>
+    <string name="import_langnames">Import langnames.json</string>
+    <string name="updating_languages">Updating languages…</string>
+    <string name="languages_updated">Languages updated. %1$d have been added.</string>
+    <string name="languages_update_failed">Failed to update languages</string>
+    <string name="catalog_settings">Catalog</string>
+    <string name="update_catalog">Update Catalog</string>
+    <string name="updating_catalog">Updating catalog…</string>
+    <string name="catalog_updated">Catalog updated. %1$d resources have been added.</string>
+    <string name="catalog_update_failed">Failed to update catalog</string>
 </resources>

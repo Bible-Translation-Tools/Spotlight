@@ -1,11 +1,11 @@
 package org.bibletranslationtools.glossary.domain
 
-import glossary.shared.generated.resources.Res
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import kotlinx.serialization.Serializable
 import org.bibletranslationtools.glossary.Utils
+import spotlight.shared.generated.resources.Res
 
 @Serializable
 data class Catalog(

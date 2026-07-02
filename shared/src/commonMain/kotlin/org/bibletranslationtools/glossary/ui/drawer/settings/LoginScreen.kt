@@ -44,16 +44,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.login
-import glossary.shared.generated.resources.login_wacs_info
-import glossary.shared.generated.resources.password
-import glossary.shared.generated.resources.username
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
 import org.bibletranslationtools.glossary.ui.dialogs.ProgressDialog
 import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.login
+import spotlight.shared.generated.resources.login_wacs_info
+import spotlight.shared.generated.resources.password
+import spotlight.shared.generated.resources.username
 
 @Composable
 fun LoginScreen(component: LoginComponent) {

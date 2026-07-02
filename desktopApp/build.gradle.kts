@@ -28,7 +28,14 @@ compose.desktop {
             packageName = "org.bibletranslationtools.glossary"
             packageVersion = libs.versions.glossary.name.get()
 
+            macOS {
+                iconFile.set(project.file("icons/spotlight.icns"))
+            }
+            windows {
+                iconFile.set(project.file("icons/spotlight.ico"))
+            }
             linux {
+                iconFile.set(project.file("icons/spotlight.png"))
                 // FileKit requires this to be set
                 modules("jdk.security.auth")
             }

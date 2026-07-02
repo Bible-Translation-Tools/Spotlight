@@ -40,13 +40,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.add_to_glossary
-import glossary.shared.generated.resources.view_glossary
 import org.bibletranslationtools.glossary.data.Chapter
 import org.bibletranslationtools.glossary.data.Phrase
 import org.bibletranslationtools.glossary.normalize
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.add_to_glossary
+import spotlight.shared.generated.resources.view_glossary
 import kotlin.math.max
 import kotlin.math.min
 

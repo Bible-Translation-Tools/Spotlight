@@ -34,17 +34,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.active
-import glossary.shared.generated.resources.group
-import glossary.shared.generated.resources.match_word
-import glossary.shared.generated.resources.select
-import glossary.shared.generated.resources.share
-import glossary.shared.generated.resources.users_count
-import glossary.shared.generated.resources.words_count
 import org.bibletranslationtools.glossary.ui.drawer.settings.GlossaryItem
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.active
+import spotlight.shared.generated.resources.group
+import spotlight.shared.generated.resources.match_word
+import spotlight.shared.generated.resources.select
+import spotlight.shared.generated.resources.share
+import spotlight.shared.generated.resources.users_count
+import spotlight.shared.generated.resources.words_count
 
 @Composable
 fun GlossaryItem(

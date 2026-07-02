@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.burnoo.compose.remembersetting.rememberStringSetting
 import dev.burnoo.compose.remembersetting.rememberStringSettingOrNull
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.logo
-import glossary.shared.generated.resources.wa
 import org.bibletranslationtools.glossary.domain.Settings
 import org.jetbrains.compose.resources.painterResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.logo
+import spotlight.shared.generated.resources.wa
 
 @Composable
 fun SplashScreen(component: SplashComponent) {

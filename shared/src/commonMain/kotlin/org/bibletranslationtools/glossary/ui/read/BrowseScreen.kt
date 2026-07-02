@@ -30,8 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.browse
 import kotlinx.coroutines.delay
 import org.bibletranslationtools.glossary.data.RefOption
 import org.bibletranslationtools.glossary.ui.components.BookItem
@@ -39,6 +37,9 @@ import org.bibletranslationtools.glossary.ui.components.ChapterGrid
 import org.bibletranslationtools.glossary.ui.components.SearchField
 import org.bibletranslationtools.glossary.ui.components.TopAppBar
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.browse
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,13 +58,13 @@ fun BrowseScreen(component: BrowseComponent) {
     LaunchedEffect(Unit) {
         val initialBookIndex = model.books.indexOf(model.book)
         expandedBookIndex = initialBookIndex
-        delay(500)
+        delay(500.milliseconds)
         bringIntoViewRequester.bringIntoView()
     }
 
     LaunchedEffect(expandedBookIndex) {
         if (expandedBookIndex != -1) {
-            delay(200)
+            delay(200.milliseconds)
             val visibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull {
                 it.index == expandedBookIndex
             }

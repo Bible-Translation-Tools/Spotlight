@@ -32,14 +32,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.create_phrase
-import glossary.shared.generated.resources.search_placeholder
-import glossary.shared.generated.resources.search_word_hint
 import org.bibletranslationtools.glossary.ui.components.PhraseItem
 import org.bibletranslationtools.glossary.ui.components.SearchField
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.create_phrase
+import spotlight.shared.generated.resources.search_placeholder
+import spotlight.shared.generated.resources.search_word_hint
 
 @Composable
 fun CreatePhraseScreen(component: CreatePhraseComponent) {

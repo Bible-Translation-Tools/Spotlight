@@ -16,11 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.edit
-import glossary.shared.generated.resources.required
 import org.bibletranslationtools.glossary.data.Language
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.edit
+import spotlight.shared.generated.resources.required
 
 @Composable
 fun LanguageSelector(

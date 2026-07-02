@@ -36,25 +36,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.add_another_phrase
-import glossary.shared.generated.resources.cancel
-import glossary.shared.generated.resources.create_new_phrase
-import glossary.shared.generated.resources.create_phrase
-import glossary.shared.generated.resources.description
-import glossary.shared.generated.resources.edit_reviewed_phrase_not_allowed
-import glossary.shared.generated.resources.editing
-import glossary.shared.generated.resources.return_to_glosssary
-import glossary.shared.generated.resources.save_exit
-import glossary.shared.generated.resources.saving
-import glossary.shared.generated.resources.spelling
-import glossary.shared.generated.resources.success
-import glossary.shared.generated.resources.successfully_added_phrase
-import glossary.shared.generated.resources.successfully_edited_phrase
-import glossary.shared.generated.resources.target_language_placeholder
 import org.bibletranslationtools.glossary.data.PhraseWorkflow
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.add_another_phrase
+import spotlight.shared.generated.resources.cancel
+import spotlight.shared.generated.resources.create_new_phrase
+import spotlight.shared.generated.resources.create_phrase
+import spotlight.shared.generated.resources.description
+import spotlight.shared.generated.resources.edit_reviewed_phrase_not_allowed
+import spotlight.shared.generated.resources.editing
+import spotlight.shared.generated.resources.return_to_glosssary
+import spotlight.shared.generated.resources.save_exit
+import spotlight.shared.generated.resources.saving
+import spotlight.shared.generated.resources.spelling
+import spotlight.shared.generated.resources.success
+import spotlight.shared.generated.resources.successfully_added_phrase
+import spotlight.shared.generated.resources.successfully_edited_phrase
+import spotlight.shared.generated.resources.target_language_placeholder
 
 @Composable
 fun EditPhraseScreen(component: EditPhraseComponent) {

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.FormatLineSpacing
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -48,33 +49,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.burnoo.compose.remembersetting.rememberStringSetting
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.about_app
-import glossary.shared.generated.resources.dark_mode
-import glossary.shared.generated.resources.data_privacy
-import glossary.shared.generated.resources.edit_account
-import glossary.shared.generated.resources.edit_permissions
-import glossary.shared.generated.resources.format_list_bulleted
-import glossary.shared.generated.resources.format_list_bulleted_add
-import glossary.shared.generated.resources.guest
-import glossary.shared.generated.resources.interface_settings
-import glossary.shared.generated.resources.language
-import glossary.shared.generated.resources.line_height
-import glossary.shared.generated.resources.login
-import glossary.shared.generated.resources.logout
-import glossary.shared.generated.resources.new_glossary
-import glossary.shared.generated.resources.other_settings
-import glossary.shared.generated.resources.person_edit
-import glossary.shared.generated.resources.review_changes
-import glossary.shared.generated.resources.search_check
-import glossary.shared.generated.resources.settings
-import glossary.shared.generated.resources.shield_lock
-import glossary.shared.generated.resources.size
-import glossary.shared.generated.resources.source_text_settings
-import glossary.shared.generated.resources.style
-import glossary.shared.generated.resources.terms_and_conditions
-import glossary.shared.generated.resources.user_settings
-import glossary.shared.generated.resources.view_glossaries
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.data.api.UserRole
 import org.bibletranslationtools.glossary.domain.Settings
@@ -94,6 +68,34 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.about_app
+import spotlight.shared.generated.resources.advanced_settings
+import spotlight.shared.generated.resources.dark_mode
+import spotlight.shared.generated.resources.data_privacy
+import spotlight.shared.generated.resources.edit_account
+import spotlight.shared.generated.resources.edit_permissions
+import spotlight.shared.generated.resources.format_list_bulleted
+import spotlight.shared.generated.resources.format_list_bulleted_add
+import spotlight.shared.generated.resources.guest
+import spotlight.shared.generated.resources.interface_settings
+import spotlight.shared.generated.resources.language
+import spotlight.shared.generated.resources.line_height
+import spotlight.shared.generated.resources.login
+import spotlight.shared.generated.resources.logout
+import spotlight.shared.generated.resources.new_glossary
+import spotlight.shared.generated.resources.other_settings
+import spotlight.shared.generated.resources.person_edit
+import spotlight.shared.generated.resources.review_changes
+import spotlight.shared.generated.resources.search_check
+import spotlight.shared.generated.resources.settings
+import spotlight.shared.generated.resources.shield_lock
+import spotlight.shared.generated.resources.size
+import spotlight.shared.generated.resources.source_text_settings
+import spotlight.shared.generated.resources.style
+import spotlight.shared.generated.resources.terms_and_conditions
+import spotlight.shared.generated.resources.user_settings
+import spotlight.shared.generated.resources.view_glossaries
 
 @Composable
 fun SettingsListScreen(component: SettingsListComponent) {
@@ -495,6 +497,11 @@ fun SettingsListScreen(component: SettingsListComponent) {
                         SettingsSection(
                             title = stringResource(Res.string.other_settings)
                         ) {
+                            SettingsClickableItem(
+                                icon = Icons.Default.Construction,
+                                text = stringResource(Res.string.advanced_settings),
+                                onClick = component::advancedSettings
+                            )
                             SettingsClickableItem(
                                 icon = Icons.Default.Info,
                                 text = stringResource(Res.string.about_app),

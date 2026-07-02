@@ -47,24 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.burnoo.compose.remembersetting.rememberIntSetting
 import dev.burnoo.compose.remembersetting.rememberStringSetting
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.add_glossary
-import glossary.shared.generated.resources.add_glossary_key_terms
-import glossary.shared.generated.resources.check_updates
-import glossary.shared.generated.resources.clear
-import glossary.shared.generated.resources.create_glossary
-import glossary.shared.generated.resources.create_new_phrase
-import glossary.shared.generated.resources.glossary_code
-import glossary.shared.generated.resources.join_glossary
-import glossary.shared.generated.resources.key_terms
-import glossary.shared.generated.resources.key_terms_unavailable
-import glossary.shared.generated.resources.no_phrases_found
-import glossary.shared.generated.resources.pending_review
-import glossary.shared.generated.resources.pending_submission
-import glossary.shared.generated.resources.reviewed
-import glossary.shared.generated.resources.search
-import glossary.shared.generated.resources.upload_glossary
-import glossary.shared.generated.resources.upload_phrases
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.data.PhraseWorkflow
 import org.bibletranslationtools.glossary.data.api.UserRole
@@ -79,6 +61,24 @@ import org.bibletranslationtools.glossary.ui.navigation.LocalSnackBarHostState
 import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.add_glossary
+import spotlight.shared.generated.resources.add_glossary_key_terms
+import spotlight.shared.generated.resources.check_updates
+import spotlight.shared.generated.resources.clear
+import spotlight.shared.generated.resources.create_glossary
+import spotlight.shared.generated.resources.create_new_phrase
+import spotlight.shared.generated.resources.glossary_code
+import spotlight.shared.generated.resources.join_glossary
+import spotlight.shared.generated.resources.key_terms
+import spotlight.shared.generated.resources.key_terms_unavailable
+import spotlight.shared.generated.resources.no_phrases_found
+import spotlight.shared.generated.resources.pending_review
+import spotlight.shared.generated.resources.pending_submission
+import spotlight.shared.generated.resources.reviewed
+import spotlight.shared.generated.resources.search
+import spotlight.shared.generated.resources.upload_glossary
+import spotlight.shared.generated.resources.upload_phrases
 
 @Composable
 fun KeyTermsListScreen(component: KeyTermsListComponent) {

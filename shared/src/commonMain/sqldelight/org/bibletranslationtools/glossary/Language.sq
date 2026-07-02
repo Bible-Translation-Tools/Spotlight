@@ -12,6 +12,14 @@ SELECT * FROM LanguageEntity WHERE slug = :slug;
 getAll:
 SELECT * FROM LanguageEntity;
 
+getReferencedSlugs:
+SELECT sourceLanguage AS slug FROM GlossaryEntity
+UNION SELECT targetLanguage AS slug FROM GlossaryEntity
+UNION SELECT lang AS slug FROM ResourceEntity;
+
+deleteBySlug:
+DELETE FROM LanguageEntity WHERE slug = :slug;
+
 getGatewayLangs:
 SELECT * FROM LanguageEntity WHERE gw = 1;
 

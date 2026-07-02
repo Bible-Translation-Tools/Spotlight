@@ -26,9 +26,9 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.read_more
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.read_more
 
 @Composable
 fun VerseReference(

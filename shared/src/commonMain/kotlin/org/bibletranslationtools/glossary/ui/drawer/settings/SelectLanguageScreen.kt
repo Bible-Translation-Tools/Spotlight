@@ -23,14 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.search_language_placeholder
-import glossary.shared.generated.resources.source_language
-import glossary.shared.generated.resources.target_language
 import org.bibletranslationtools.glossary.ui.components.LanguageItem
 import org.bibletranslationtools.glossary.ui.components.SearchField
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.search_language_placeholder
+import spotlight.shared.generated.resources.source_language
+import spotlight.shared.generated.resources.target_language
 
 @Composable
 fun SelectLanguageScreen(component: SelectLanguageComponent) {

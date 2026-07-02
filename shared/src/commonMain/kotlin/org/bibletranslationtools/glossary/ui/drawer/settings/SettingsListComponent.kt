@@ -40,6 +40,7 @@ interface SettingsListComponent : DrawerContext {
     fun clearSnackBarMessage()
     fun loadPendingPhrases(glossary: Glossary)
     fun reviewChanges()
+    fun advancedSettings()
 }
 
 class DefaultSettingsListComponent(
@@ -51,7 +52,8 @@ class DefaultSettingsListComponent(
     private val onNavigateChangeEmoji: () -> Unit,
     private val onLogout: () -> Unit,
     private val onEditPermissions: () -> Unit,
-    private val onReviewChanges: () -> Unit
+    private val onReviewChanges: () -> Unit,
+    private val onAdvancedSettings: () -> Unit
 ) : DrawerComponent(componentContext, parentContext), SettingsListComponent, KoinComponent {
 
     private val glossaryApi: GlossaryApi by inject()
@@ -118,5 +120,9 @@ class DefaultSettingsListComponent(
 
     override fun reviewChanges() {
         onReviewChanges()
+    }
+
+    override fun advancedSettings() {
+        onAdvancedSettings()
     }
 }

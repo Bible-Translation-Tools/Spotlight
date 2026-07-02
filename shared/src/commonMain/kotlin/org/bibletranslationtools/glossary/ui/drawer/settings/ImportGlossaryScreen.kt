@@ -28,21 +28,21 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.back
-import glossary.shared.generated.resources.download
-import glossary.shared.generated.resources.downloading_glossary
-import glossary.shared.generated.resources.downloading_glossary_hint
-import glossary.shared.generated.resources.glossary_code_not_recognized
-import glossary.shared.generated.resources.import_glossary_hint
-import glossary.shared.generated.resources.import_glossary_manually
-import glossary.shared.generated.resources.import_glossary_title
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.ui.components.OtpInput
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.back
+import spotlight.shared.generated.resources.download
+import spotlight.shared.generated.resources.downloading_glossary
+import spotlight.shared.generated.resources.downloading_glossary_hint
+import spotlight.shared.generated.resources.glossary_code_not_recognized
+import spotlight.shared.generated.resources.import_glossary_hint
+import spotlight.shared.generated.resources.import_glossary_manually
+import spotlight.shared.generated.resources.import_glossary_title
 
 @Composable
 fun ImportGlossaryScreen(component: ImportGlossaryComponent) {

@@ -5,9 +5,6 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.decompose.value.update
 import com.arkivanov.essenty.lifecycle.doOnResume
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.downloading_glossary
-import glossary.shared.generated.resources.importing_glossary
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +25,9 @@ import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.downloading_glossary
+import spotlight.shared.generated.resources.importing_glossary
 
 interface ImportGlossaryComponent : DrawerContext {
     val model: Value<Model>

@@ -20,20 +20,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.cancel
-import glossary.shared.generated.resources.download_now
-import glossary.shared.generated.resources.downloading
-import glossary.shared.generated.resources.glossary_update_failed
-import glossary.shared.generated.resources.glossary_update_failed_description
-import glossary.shared.generated.resources.glossary_updated
-import glossary.shared.generated.resources.glossary_updated_description
-import glossary.shared.generated.resources.ok
-import glossary.shared.generated.resources.this_make_take_moment
-import glossary.shared.generated.resources.try_again
-import glossary.shared.generated.resources.update_available
-import glossary.shared.generated.resources.update_available_description
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.cancel
+import spotlight.shared.generated.resources.download_now
+import spotlight.shared.generated.resources.downloading
+import spotlight.shared.generated.resources.glossary_update_failed
+import spotlight.shared.generated.resources.glossary_update_failed_description
+import spotlight.shared.generated.resources.glossary_updated
+import spotlight.shared.generated.resources.glossary_updated_description
+import spotlight.shared.generated.resources.ok
+import spotlight.shared.generated.resources.this_make_take_moment
+import spotlight.shared.generated.resources.try_again
+import spotlight.shared.generated.resources.update_available
+import spotlight.shared.generated.resources.update_available_description
 
 enum class UpdateStatus {
     DEFAULT,

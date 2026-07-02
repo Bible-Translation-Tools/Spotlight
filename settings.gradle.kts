@@ -1,4 +1,4 @@
-rootProject.name = "Glossary"
+rootProject.name = "Spotlight"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

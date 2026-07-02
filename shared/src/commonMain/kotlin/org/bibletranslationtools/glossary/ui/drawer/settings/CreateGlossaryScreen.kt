@@ -29,19 +29,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import glossary.shared.generated.resources.Res
-import glossary.shared.generated.resources.cancel
-import glossary.shared.generated.resources.create_glossary
-import glossary.shared.generated.resources.dictionary
-import glossary.shared.generated.resources.download
-import glossary.shared.generated.resources.download_resource_request
-import glossary.shared.generated.resources.glossary_code
-import glossary.shared.generated.resources.new_glossary
-import glossary.shared.generated.resources.ok
-import glossary.shared.generated.resources.saving
-import glossary.shared.generated.resources.share_code_hint
-import glossary.shared.generated.resources.source_language
-import glossary.shared.generated.resources.target_language
 import org.bibletranslationtools.glossary.Utils
 import org.bibletranslationtools.glossary.ui.components.LanguageSelector
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
@@ -49,6 +36,19 @@ import org.bibletranslationtools.glossary.ui.dialogs.ConfirmDialog
 import org.bibletranslationtools.glossary.ui.dialogs.ProgressDialog
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.cancel
+import spotlight.shared.generated.resources.create_glossary
+import spotlight.shared.generated.resources.dictionary
+import spotlight.shared.generated.resources.download
+import spotlight.shared.generated.resources.download_resource_request
+import spotlight.shared.generated.resources.glossary_code
+import spotlight.shared.generated.resources.new_glossary
+import spotlight.shared.generated.resources.ok
+import spotlight.shared.generated.resources.saving
+import spotlight.shared.generated.resources.share_code_hint
+import spotlight.shared.generated.resources.source_language
+import spotlight.shared.generated.resources.target_language
 
 @Composable
 fun CreateGlossaryScreen(component: CreateGlossaryComponent) {
