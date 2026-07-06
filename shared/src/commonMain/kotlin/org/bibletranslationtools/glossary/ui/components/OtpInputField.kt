@@ -89,6 +89,7 @@ fun OtpInputField(
             enabled = enabled,
             cursorBrush = SolidColor(Color.Transparent),
             textStyle = TextStyle(
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp

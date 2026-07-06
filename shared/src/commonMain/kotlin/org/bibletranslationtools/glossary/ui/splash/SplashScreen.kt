@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,14 +20,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.burnoo.compose.remembersetting.rememberStringSetting
 import dev.burnoo.compose.remembersetting.rememberStringSettingOrNull
 import org.bibletranslationtools.glossary.domain.Settings
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import spotlight.shared.generated.resources.Res
-import spotlight.shared.generated.resources.logo
+import spotlight.shared.generated.resources.app_name
 import spotlight.shared.generated.resources.wa
 
 @Composable
@@ -65,10 +69,17 @@ fun SplashScreen(component: SplashComponent) {
                 .background(gradient)
                 .padding(paddingValues)
         ) {
-            Image(
-                painter = painterResource(Res.drawable.logo),
-                contentDescription = "app_logo",
-                modifier = Modifier.align(Alignment.Center)
+//            Image(
+//                painter = painterResource(Res.drawable.logo),
+//                contentDescription = "app_logo",
+//                modifier = Modifier.align(Alignment.Center)
+//            )
+
+            Text(
+                text = stringResource(Res.string.app_name),
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Column(
