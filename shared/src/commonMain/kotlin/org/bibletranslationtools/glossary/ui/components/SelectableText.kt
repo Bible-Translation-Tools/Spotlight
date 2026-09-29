@@ -5,8 +5,8 @@ package org.bibletranslationtools.glossary.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.text.selection.Selection
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalTextStyle
@@ -20,13 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.InternalTextApi
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -52,8 +52,6 @@ import kotlin.math.min
 
 private const val VERSE_TAG = "verse_tag"
 
-// Opt-in for onSelectionChange, which is an internal API.
-@OptIn(InternalTextApi::class)
 @Composable
 fun SelectableText(
     chapter: Chapter,
@@ -72,15 +70,23 @@ fun SelectableText(
 
     val currentChapter by rememberUpdatedState(newValue = chapter)
     val currentPhrases by rememberUpdatedState(newValue = phrases)
+    val currentOnSelectedTextChanged by rememberUpdatedState(newValue = onSelectedTextChanged)
 
-    var selection by remember { mutableStateOf<Selection?>(null) }
+    val selectionState = rememberSelectionState()
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     var annotatedString by remember { mutableStateOf<AnnotatedString?>(null) }
 
     LaunchedEffect(selectedText) {
         if (selectedText.isEmpty()) {
-            selection = null
+            selectionState.clear()
         }
+    }
+
+    LaunchedEffect(selectionState) {
+        snapshotFlow { selectionState.selectedTexts }
+            .collect { texts ->
+                currentOnSelectedTextChanged(texts.joinToString("") { it.text })
+            }
     }
 
     LaunchedEffect(
@@ -91,7 +97,7 @@ fun SelectableText(
         fontSize,
         lineHeight
     ) {
-        selection = null
+        selectionState.clear()
         onSelectedTextChanged("")
         textLayoutResult = null
 
@@ -188,18 +194,7 @@ fun SelectableText(
     Box(modifier = modifier) {
         annotatedString?.let { text ->
             CompositionLocalProvider(LocalTextToolbar provides EmptyTextToolbar) {
-                SelectionContainer(
-                    selection = selection,
-                    onSelectionChange = { newSelection ->
-                        selection = newSelection
-                        val newSelectedText = newSelection?.let { sel ->
-                            val start = min(sel.start.offset, sel.end.offset)
-                            val end = max(sel.start.offset, sel.end.offset)
-                            text.substring(start, end)
-                        } ?: ""
-                        onSelectedTextChanged(newSelectedText)
-                    }
-                ) {
+                SelectionContainer(state = selectionState) {
                     Text(
                         text = text,
                         style = LocalTextStyle.current.copy(lineHeight = 32.sp),
@@ -213,7 +208,8 @@ fun SelectableText(
             }
         }
 
-        selection?.let { sel ->
+        // SelectionState.selection is internal; its offsets position the button
+        selectionState.selection?.let { sel ->
             textLayoutResult?.let { layoutResult ->
                 val selectionBoundingBox = layoutResult.getPathForRange(
                     start = min(sel.start.offset, sel.end.offset),

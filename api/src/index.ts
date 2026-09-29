@@ -46,12 +46,17 @@ app.use("*", cors());
 app.use("*", async (c, next) => {
   const dbHelper = new DbHelper(c.env);
   c.set("db", dbHelper);
-  await next();
+  try {
+    await next();
+  } finally {
+    c.executionCtx.waitUntil(dbHelper.close());
+  }
 });
 
 app.use("/private/api/*", async (c, next) => {
   const jwtMiddleware = jwt({
     secret: c.env.JWT_SECRET_KEY,
+    alg: "HS256",
   });
   return jwtMiddleware(c, next);
 });
@@ -274,74 +279,74 @@ app.post("/private/api/glossary", async (c) => {
       }
     }
 
-    const insertResource = await dbHelper
-      .getDb()
-      .insert(resourceTable)
-      .values({
-        language: manifest.dublin_core.language.identifier,
-        type: manifest.dublin_core.identifier,
-        version: manifest.dublin_core.version,
-      })
-      .onConflictDoUpdate({
-        target: [resourceTable.language, resourceTable.type],
-        set: {
-          version: manifest!.dublin_core.version,
-        },
-      })
-      .returning({ id: resourceTable.id });
-    const resourceId = insertResource[0].id;
+    const CHUNK_SIZE = 50;
+    const glossaryData: Glossary = glossary;
+    const manifestData: Manifest = manifest;
 
-    const insertGlossary = await dbHelper
-      .getDb()
-      .insert(glossaryTable)
-      .values({
-        id: uuidv4(),
-        code: glossary.code,
-        sourceLanguage: glossary.sourceLanguage,
-        targetLanguage: glossary.targetLanguage,
-        resourceId: resourceId,
-      })
-      .onConflictDoUpdate({
-        target: [
-          glossaryTable.code,
-          glossaryTable.sourceLanguage,
-          glossaryTable.targetLanguage,
-        ],
-        set: {
+    // Single transaction, so a dropped connection leaves no partial glossary behind
+    const updated = await dbHelper.getDb().transaction(async (tx) => {
+      const insertResource = await tx
+        .insert(resourceTable)
+        .values({
+          language: manifestData.dublin_core.language.identifier,
+          type: manifestData.dublin_core.identifier,
+          version: manifestData.dublin_core.version,
+        })
+        .onConflictDoUpdate({
+          target: [resourceTable.language, resourceTable.type],
+          set: {
+            version: manifestData.dublin_core.version,
+          },
+        })
+        .returning({ id: resourceTable.id });
+      const resourceId = insertResource[0].id;
+
+      const insertGlossary = await tx
+        .insert(glossaryTable)
+        .values({
+          id: uuidv4(),
+          code: glossaryData.code,
+          sourceLanguage: glossaryData.sourceLanguage,
+          targetLanguage: glossaryData.targetLanguage,
           resourceId: resourceId,
-        },
-      })
-      .returning({ id: glossaryTable.id });
+        })
+        .onConflictDoUpdate({
+          target: [
+            glossaryTable.code,
+            glossaryTable.sourceLanguage,
+            glossaryTable.targetLanguage,
+          ],
+          set: {
+            resourceId: resourceId,
+          },
+        })
+        .returning({ id: glossaryTable.id });
 
-    const glossaryId = insertGlossary[0].id;
+      const glossaryId = insertGlossary[0].id;
 
-    await dbHelper
-      .getDb()
-      .insert(glossaryUsers)
-      .values({
-        glossaryId: glossaryId,
-        userId: auth.id,
-        role: "owner",
-      })
-      .onConflictDoUpdate({
-        target: [glossaryUsers.glossaryId, glossaryUsers.userId],
-        set: {
+      await tx
+        .insert(glossaryUsers)
+        .values({
+          glossaryId: glossaryId,
+          userId: auth.id,
           role: "owner",
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: [glossaryUsers.glossaryId, glossaryUsers.userId],
+          set: {
+            role: "owner",
+          },
+        });
 
-    const phraseValues = glossary.phrases.map((phrase) => ({
-      id: uuidv4(),
-      phrase: phrase.phrase,
-      spelling: phrase.spelling,
-      description: phrase.description,
-      audio: phrase.audio,
-      glossaryId: glossaryId,
-    }));
+      const phraseValues = glossaryData.phrases.map((phrase) => ({
+        id: uuidv4(),
+        phrase: phrase.phrase,
+        spelling: phrase.spelling,
+        description: phrase.description,
+        audio: phrase.audio,
+        glossaryId: glossaryId,
+      }));
 
-    const CHUNK_SIZE = 1000;
-
-    await dbHelper.getDb().transaction(async (tx) => {
       for (let i = 0; i < phraseValues.length; i += CHUNK_SIZE) {
         const chunk = phraseValues.slice(i, i + CHUNK_SIZE);
         await tx
@@ -356,10 +361,10 @@ app.post("/private/api/glossary", async (c) => {
             },
           });
       }
-    });
 
-    const updated = await dbHelper.getDb().query.glossaryTable.findFirst({
-      where: eq(glossaryTable.id, glossaryId),
+      return tx.query.glossaryTable.findFirst({
+        where: eq(glossaryTable.id, glossaryId),
+      });
     });
 
     if (!updated) {
@@ -368,6 +373,7 @@ app.post("/private/api/glossary", async (c) => {
 
     return c.json({ id: updated.id, version: updated.version });
   } catch (error: any) {
+    console.error("Upload glossary failed", error);
     return c.json<ErrorDetails>(
       {
         error: "Failed to process glossary file.",
@@ -696,7 +702,7 @@ app.post("/private/api/glossary/:id/pending_phrases", async (c) => {
       glossaryId: glossary.id,
     }));
 
-    const CHUNK_SIZE = 1000;
+    const CHUNK_SIZE = 50;
 
     await dbHelper.getDb().transaction(async (tx) => {
       for (let i = 0; i < phraseValues.length; i += CHUNK_SIZE) {
@@ -1208,16 +1214,16 @@ export default {
     env: CloudflareBindings,
     ctx: ExecutionContext,
   ) {
+    const dbHelper = new DbHelper(env);
     try {
       // This is just to keep supabase from pausing the database automatically due to inactivity.
-      const dbHelper = new DbHelper(env);
       const glossaryCount = await dbHelper
         .getDb()
         .select({ count: sql<number>`count(*)` })
         .from(glossaryTable);
       console.log(`Glossary count: ${glossaryCount[0].count}`);
 
-      dbHelper
+      await dbHelper
         .getDb()
         .update(usersTable)
         .set({ updatedAt: new Date() })
@@ -1227,12 +1233,19 @@ export default {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      dbHelper
+      await dbHelper
         .getDb()
         .delete(pendingPhraseTable)
-        .where(lt(pendingPhraseTable.updatedAt, thirtyDaysAgo));
+        .where(
+          and(
+            ne(pendingPhraseTable.reviewStatus, "unreviewed"),
+            lt(pendingPhraseTable.updatedAt, thirtyDaysAgo),
+          ),
+        );
     } catch (error) {
       console.error(error);
+    } finally {
+      ctx.waitUntil(dbHelper.close());
     }
   },
 };

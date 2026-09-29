@@ -142,7 +142,15 @@ class GlossaryApiImpl(
                 bearerAuth(token)
                 setBody(file.readBytes())
             }
-            response.body()
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                throw ServerResponseException(
+                    response,
+                    "Error uploading glossary"
+                )
+            }
         }
     }
 
