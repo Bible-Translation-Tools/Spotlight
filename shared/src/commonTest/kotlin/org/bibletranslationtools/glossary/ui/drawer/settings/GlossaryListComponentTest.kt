@@ -28,6 +28,8 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
+import org.bibletranslationtools.glossary.waitForCondition
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -83,6 +85,7 @@ class GlossaryListComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }
@@ -117,11 +120,8 @@ class GlossaryListComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background threads to finish
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.glossaries.isNotEmpty() && !component.model.value.isLoading
         }
 
         val model = component.model.value
@@ -182,11 +182,8 @@ class GlossaryListComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background threads to finish
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.selectedResource != null && !component.model.value.isLoading
         }
 
         val model = component.model.value
@@ -246,11 +243,8 @@ class GlossaryListComponentTest {
         
         testScheduler.advanceUntilIdle()
 
-        var selectAttempts = 0
-        while (component.model.value.isLoading && selectAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            selectAttempts++
+        waitForCondition {
+            component.model.value.selectedResource != null && !component.model.value.isLoading
         }
 
         // Mock PlatformFile
@@ -260,11 +254,8 @@ class GlossaryListComponentTest {
 
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && component.model.value.progress == null
         }
 
         val model = component.model.value

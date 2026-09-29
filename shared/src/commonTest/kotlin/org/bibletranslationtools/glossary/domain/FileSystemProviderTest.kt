@@ -22,8 +22,10 @@ class FileSystemProviderTest : BaseTest() {
 
     @Test
     fun testRootDir() {
-        val expected = Path(testRootDir, "WaGlossary")
-        assertEquals(expected.toString(), fileSystemProvider.rootDir.toString())
+        val actual = fileSystemProvider.rootDir
+        // rootDir is canonical (e.g. macOS /var -> /private/var), so compare resolved paths
+        val expected = SystemFileSystem.resolve(Path(testRootDir, "WaGlossary"))
+        assertEquals(expected.toString(), actual.toString())
     }
 
     @Test

@@ -7,7 +7,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -24,6 +23,8 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
+import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -75,18 +76,11 @@ class MainComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.waitForCondition(condition: () -> Boolean) {
-        var attempts = 0
-        while (!condition() && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
-        }
-    }
 
     @Test
     fun testInitialization() = runTest(testDispatcher) {

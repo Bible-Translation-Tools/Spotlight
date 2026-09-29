@@ -28,7 +28,7 @@ DO UPDATE SET
     version = excluded.version,
     resourceId = excluded.resourceId,
     updatedAt = excluded.updatedAt,
-    remoteId = excluded.remoteId
+    remoteId = COALESCE(excluded.remoteId, GlossaryEntity.remoteId)
 RETURNING id;
 
 delete:

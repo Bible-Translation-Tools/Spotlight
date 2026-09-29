@@ -7,6 +7,7 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
 import org.bibletranslationtools.glossary.Utils.JsonLenient
 
@@ -15,7 +16,10 @@ internal fun createHttpClient(
 ): HttpClient {
     val configuration:  HttpClientConfig<*>.() -> Unit = {
         install(HttpRequestRetry) {
-            retryOnServerErrors(maxRetries = 5)
+            // Only GET is safe to repeat; retrying POST can apply an upload several times
+            retryIf(maxRetries = 5) { request, response ->
+                request.method == HttpMethod.Get && response.status.value in 500..599
+            }
             exponentialDelay()
         }
         install(HttpTimeout) {

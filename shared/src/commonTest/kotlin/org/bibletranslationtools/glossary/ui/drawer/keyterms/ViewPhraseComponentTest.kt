@@ -24,6 +24,8 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
+import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -70,6 +72,7 @@ class ViewPhraseComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }
@@ -117,11 +120,8 @@ class ViewPhraseComponentTest {
         lifecycleRegistry.resume()
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.refs.isNotEmpty() && !component.model.value.isLoading
         }
 
         val model = component.model.value

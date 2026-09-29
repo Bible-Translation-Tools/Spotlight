@@ -77,7 +77,7 @@ fun SplashScreen(component: SplashComponent) {
 
             Text(
                 text = stringResource(Res.string.app_name),
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onPrimaryFixed,
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold
             )
