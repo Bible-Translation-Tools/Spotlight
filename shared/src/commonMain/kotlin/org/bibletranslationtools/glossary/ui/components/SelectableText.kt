@@ -5,6 +5,7 @@ package org.bibletranslationtools.glossary.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.text.contextmenu.provider.LocalTextContextMenuToolbarProvider
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.material3.Button
@@ -193,7 +194,10 @@ fun SelectableText(
 
     Box(modifier = modifier) {
         annotatedString?.let { text ->
-            CompositionLocalProvider(LocalTextToolbar provides EmptyTextToolbar) {
+            CompositionLocalProvider(
+                LocalTextToolbar provides EmptyTextToolbar,
+                LocalTextContextMenuToolbarProvider provides EmptyTextContextMenuProvider
+            ) {
                 SelectionContainer(state = selectionState) {
                     Text(
                         text = text,
