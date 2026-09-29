@@ -23,6 +23,7 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -128,11 +129,8 @@ class SplashComponentTest {
         testScheduler.advanceUntilIdle()
         
         // Wait for Dispatchers.Default inside loadResource/loadGlossary logic to finish
-        var attempts = 0
-        while (!initDoneCalled && attempts < 300) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            initDoneCalled
         }
         
         // Assertions

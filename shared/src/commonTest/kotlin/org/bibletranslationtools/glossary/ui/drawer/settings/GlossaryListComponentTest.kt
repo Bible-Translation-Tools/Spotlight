@@ -120,11 +120,8 @@ class GlossaryListComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background threads to finish
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.glossaries.isNotEmpty() && !component.model.value.isLoading
         }
 
         val model = component.model.value
@@ -185,11 +182,8 @@ class GlossaryListComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background threads to finish
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.selectedResource != null && !component.model.value.isLoading
         }
 
         val model = component.model.value
@@ -249,11 +243,8 @@ class GlossaryListComponentTest {
         
         testScheduler.advanceUntilIdle()
 
-        var selectAttempts = 0
-        while (component.model.value.isLoading && selectAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            selectAttempts++
+        waitForCondition {
+            component.model.value.selectedResource != null && !component.model.value.isLoading
         }
 
         // Mock PlatformFile

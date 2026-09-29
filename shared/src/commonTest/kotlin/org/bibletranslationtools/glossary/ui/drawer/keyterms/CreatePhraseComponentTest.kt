@@ -26,6 +26,7 @@ import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
 import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -106,7 +107,12 @@ class CreatePhraseComponentTest {
 
         val existingPhrase = Phrase("beginning", id = "p1", glossaryId = "g1_id")
         coEvery { glossaryRepository.getPhrases("g1_id") } returns listOf(existingPhrase)
-        coEvery { glossaryRepository.getPendingPhrases("g1_id") } returns emptyList()
+        // Set in the same step that stores the loaded phrases, after the verses are loaded
+        var phrasesLoaded = false
+        coEvery { glossaryRepository.getPendingPhrases("g1_id") } answers {
+            phrasesLoaded = true
+            emptyList()
+        }
 
         var navigatedEditPhrase: Phrase? = null
         val componentContext = DefaultComponentContext(lifecycle = LifecycleRegistry())
@@ -117,6 +123,11 @@ class CreatePhraseComponentTest {
         )
 
         testScheduler.advanceUntilIdle()
+
+        // Init loads verses on a background thread, and the debounced empty query searches too
+        waitForCondition {
+            phrasesLoaded && !component.model.value.isSearching
+        }
 
         // 1. Initial State
         assertEquals("", component.model.value.searchQuery)
@@ -130,11 +141,8 @@ class CreatePhraseComponentTest {
         testScheduler.advanceTimeBy(350L)
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isSearching && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10L)
-            attempts++
+        waitForCondition {
+            component.model.value.results.firstOrNull()?.phrase == "created" && !component.model.value.isSearching
         }
 
         val modelAfterSearch = component.model.value
@@ -151,11 +159,8 @@ class CreatePhraseComponentTest {
         testScheduler.advanceTimeBy(350L)
         testScheduler.advanceUntilIdle()
 
-        var attempts2 = 0
-        while (component.model.value.isSearching && attempts2 < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10L)
-            attempts2++
+        waitForCondition {
+            component.model.value.results.firstOrNull()?.phrase == "beginning" && !component.model.value.isSearching
         }
 
         val modelAfterSearch2 = component.model.value

@@ -28,6 +28,7 @@ import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
 import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -145,11 +146,8 @@ class EditPhraseComponentTest {
         component.savePendingPhrase(spelling = "God", description = "Creator")
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isSaving && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.justSaved && eventSent != null && !component.model.value.isSaving
         }
 
         val model = component.model.value
@@ -201,11 +199,8 @@ class EditPhraseComponentTest {
         component.savePendingPhrase(spelling = "unmatched", description = "Test")
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isSaving && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.error != null && !component.model.value.isSaving
         }
 
         val model = component.model.value

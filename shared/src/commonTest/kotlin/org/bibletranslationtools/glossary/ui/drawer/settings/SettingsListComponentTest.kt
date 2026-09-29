@@ -19,6 +19,7 @@ import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.NetworkResult
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
 import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -136,11 +137,8 @@ class SettingsListComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background thread
-        var attempts = 0
-        while (component.model.value.pendingPhrasesLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.isNotEmpty() && !component.model.value.pendingPhrasesLoading
         }
 
         val model = component.model.value
@@ -176,11 +174,8 @@ class SettingsListComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background thread
-        var attempts = 0
-        while (component.model.value.pendingPhrasesLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            !component.model.value.pendingPhrasesLoading
         }
 
         val model = component.model.value

@@ -131,11 +131,9 @@ class KeyTermsListComponentTest : BaseTest() {
         testScheduler.advanceUntilIdle()
 
         // Wait for background IO and Default dispatchers to complete
-        var attempts = 0
-        while ((component.model.value.isLoading || component.model.value.isRemoteLoading) && attempts < 150) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.phrases.isNotEmpty() &&
+                !component.model.value.isLoading && !component.model.value.isRemoteLoading
         }
 
         val model = component.model.value
@@ -323,11 +321,8 @@ class KeyTermsListComponentTest : BaseTest() {
         component.clearReviewedPhrases()
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && !component.model.value.isLoading
         }
 
         val model = component.model.value

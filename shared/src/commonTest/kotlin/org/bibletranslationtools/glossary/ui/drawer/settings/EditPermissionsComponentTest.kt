@@ -98,11 +98,8 @@ class EditPermissionsComponentTest {
         component.loadGlossaryUsers(glossary)
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isRefreshing && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            glossaryStateHolder.state.value.users.isNotEmpty() && !component.model.value.isRefreshing
         }
 
         val model = component.model.value

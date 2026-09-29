@@ -22,6 +22,7 @@ import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
 import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -91,11 +92,8 @@ class CreateGlossaryComponentTest {
         testScheduler.advanceUntilIdle()
         
         // Wait for background threads to complete
-        var attempts = 0
-        while (component.model.value.isSaving && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.resourceRequest != null && !component.model.value.isSaving
         }
         
         val model = component.model.value
@@ -152,11 +150,8 @@ class CreateGlossaryComponentTest {
         testScheduler.advanceUntilIdle()
         
         // Wait for background threads to complete
-        var attempts = 0
-        while (component.model.value.isSaving && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            createdGlossary != null && !component.model.value.isSaving
         }
         
         val model = component.model.value

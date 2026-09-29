@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.TestScope
  * rather than for a busy flag to clear: the flag may not even be set yet when the wait starts.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-fun TestScope.waitForCondition(timeoutMs: Long = 3000, condition: () -> Boolean) {
+fun TestScope.waitForCondition(timeoutMs: Long = 5000, condition: () -> Boolean) {
     var waited = 0L
     while (!condition() && waited < timeoutMs) {
         Thread.sleep(10)

@@ -20,6 +20,7 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStore
 import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.settle
+import org.bibletranslationtools.glossary.waitForCondition
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -104,11 +105,8 @@ class BrowseComponentTest {
         testScheduler.advanceUntilIdle()
         
         // Wait for background thread (Dispatchers.Default) to finish loading
-        var attempts = 0
-        while (component.model.value.books.isEmpty() && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.books.isNotEmpty() && component.model.value.book != null && component.model.value.chapter != null
         }
         
         val model = component.model.value
