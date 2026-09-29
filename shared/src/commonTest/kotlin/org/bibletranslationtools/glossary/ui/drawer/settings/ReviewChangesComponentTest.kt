@@ -26,6 +26,8 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
+import org.bibletranslationtools.glossary.waitForCondition
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -74,6 +76,7 @@ class ReviewChangesComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }
@@ -105,11 +108,8 @@ class ReviewChangesComponentTest {
 
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.isLoading && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.isNotEmpty() && !component.model.value.isLoading
         }
 
         val model = component.model.value
@@ -146,11 +146,8 @@ class ReviewChangesComponentTest {
         component.loadPendingPhrases(glossary, isRefreshing = false)
         testScheduler.advanceUntilIdle()
 
-        var loadAttempts = 0
-        while (component.model.value.isLoading && loadAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            loadAttempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.isNotEmpty() && !component.model.value.isLoading
         }
 
         assertEquals(1, component.model.value.pendingPhrases.size)
@@ -162,11 +159,9 @@ class ReviewChangesComponentTest {
         component.saveReviewStatus(pending, ReviewStatus.APPROVED)
         testScheduler.advanceUntilIdle()
 
-        var saveAttempts = 0
-        while (component.model.value.progress != null && saveAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            saveAttempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.firstOrNull()?.reviews?.isNotEmpty() == true &&
+                component.model.value.progress == null
         }
 
         val model = component.model.value
@@ -196,11 +191,8 @@ class ReviewChangesComponentTest {
         component.loadPendingPhrases(glossary, isRefreshing = false)
         testScheduler.advanceUntilIdle()
 
-        var loadAttempts = 0
-        while (component.model.value.isLoading && loadAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            loadAttempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.isNotEmpty() && !component.model.value.isLoading
         }
 
         assertEquals(1, component.model.value.pendingPhrases.size)
@@ -211,11 +203,8 @@ class ReviewChangesComponentTest {
         component.saveReviewStatus(pending, ReviewStatus.APPROVED)
         testScheduler.advanceUntilIdle()
 
-        var saveAttempts = 0
-        while (component.model.value.progress != null && saveAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            saveAttempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.isEmpty() && component.model.value.progress == null
         }
 
         val model = component.model.value
@@ -244,11 +233,8 @@ class ReviewChangesComponentTest {
         component.loadPendingPhrases(glossary, isRefreshing = false)
         testScheduler.advanceUntilIdle()
 
-        var loadAttempts = 0
-        while (component.model.value.isLoading && loadAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            loadAttempts++
+        waitForCondition {
+            component.model.value.pendingPhrases.isNotEmpty() && !component.model.value.isLoading
         }
 
         coEvery { glossaryApi.reviewPendingPhrase("rem1", any()) } returns NetworkResult.Error(500, ErrorDetails("Review failed", "Details"))
@@ -256,11 +242,8 @@ class ReviewChangesComponentTest {
         component.saveReviewStatus(pending, ReviewStatus.APPROVED)
         testScheduler.advanceUntilIdle()
 
-        var saveAttempts = 0
-        while (component.model.value.progress != null && saveAttempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            saveAttempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && component.model.value.progress == null
         }
 
         val model = component.model.value

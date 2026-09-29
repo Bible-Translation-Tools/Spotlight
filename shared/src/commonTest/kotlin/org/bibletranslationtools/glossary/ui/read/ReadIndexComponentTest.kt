@@ -28,6 +28,7 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -77,6 +78,7 @@ class ReadIndexComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }

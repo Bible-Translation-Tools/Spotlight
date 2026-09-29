@@ -18,6 +18,7 @@ import org.bibletranslationtools.glossary.data.api.User
 import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.NetworkResult
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -49,6 +50,7 @@ class SettingsListComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }

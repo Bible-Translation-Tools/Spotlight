@@ -33,6 +33,8 @@ import org.bibletranslationtools.glossary.ui.state.AppStateStoreImpl
 import org.bibletranslationtools.glossary.ui.state.GlossaryStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.ResourceStateHolderImpl
 import org.bibletranslationtools.glossary.ui.state.UserStateHolderImpl
+import org.bibletranslationtools.glossary.waitForCondition
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -91,6 +93,7 @@ class KeyTermsListComponentTest : BaseTest() {
 
     @AfterTest
     override fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
         super.tearDown()
@@ -187,11 +190,8 @@ class KeyTermsListComponentTest : BaseTest() {
         component.uploadGlossary()
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 150) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && component.model.value.progress == null
         }
 
         val model = component.model.value
@@ -237,11 +237,8 @@ class KeyTermsListComponentTest : BaseTest() {
         component.checkForUpdates()
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && component.model.value.progress == null
         }
 
         val model = component.model.value
@@ -286,11 +283,8 @@ class KeyTermsListComponentTest : BaseTest() {
         component.joinGlossary()
         testScheduler.advanceUntilIdle()
 
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && component.model.value.progress == null
         }
 
         val model = component.model.value

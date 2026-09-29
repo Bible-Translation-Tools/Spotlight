@@ -19,6 +19,8 @@ import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.usecases.ImportGlossary
 import org.bibletranslationtools.glossary.ui.components.OtpAction
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
+import org.bibletranslationtools.glossary.waitForCondition
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -54,6 +56,7 @@ class ImportGlossaryComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }
@@ -120,11 +123,8 @@ class ImportGlossaryComponentTest {
         testScheduler.advanceUntilIdle()
         
         // Wait for Dispatchers.Default inside import logic to finish
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            importFinished && component.model.value.progress == null
         }
         
         val model = component.model.value

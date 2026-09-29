@@ -45,7 +45,7 @@ jobs:
           echo "Artifact base name: $ARTIFACT_BASE"
 
       - name: Test with Gradle
-        run: ./gradlew test
+        run: ./gradlew test :shared:jvmTest
 
       - name: Build Release (APK & AAB)
         run: ./gradlew :androidApp:assembleRelease :androidApp:bundleRelease --stacktrace

@@ -16,6 +16,8 @@ import org.bibletranslationtools.glossary.data.api.User
 import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.NetworkResult
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
+import org.bibletranslationtools.glossary.waitForCondition
+import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -46,6 +48,7 @@ class ChangeEmojiComponentTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.settle()
         stopKoin()
         Dispatchers.resetMain()
     }
@@ -69,11 +72,8 @@ class ChangeEmojiComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background thread
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            userUpdatedCalled != null && component.model.value.progress == null
         }
 
         val model = component.model.value
@@ -101,11 +101,8 @@ class ChangeEmojiComponentTest {
         testScheduler.advanceUntilIdle()
 
         // Wait for background thread
-        var attempts = 0
-        while (component.model.value.progress != null && attempts < 100) {
-            Thread.sleep(10)
-            testScheduler.advanceTimeBy(10)
-            attempts++
+        waitForCondition {
+            component.model.value.snackBarMessage != null && component.model.value.progress == null
         }
 
         val model = component.model.value
