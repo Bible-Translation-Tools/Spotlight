@@ -33,9 +33,11 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import kotlinx.coroutines.launch
 import org.bibletranslationtools.glossary.ui.components.OtpInput
 import org.bibletranslationtools.glossary.ui.components.TopDrawerBar
+import org.bibletranslationtools.glossary.ui.dialogs.ConfirmDialog
 import org.jetbrains.compose.resources.stringResource
 import spotlight.shared.generated.resources.Res
 import spotlight.shared.generated.resources.back
+import spotlight.shared.generated.resources.cancel
 import spotlight.shared.generated.resources.download
 import spotlight.shared.generated.resources.downloading_glossary
 import spotlight.shared.generated.resources.downloading_glossary_hint
@@ -43,6 +45,9 @@ import spotlight.shared.generated.resources.glossary_code_not_recognized
 import spotlight.shared.generated.resources.import_glossary_hint
 import spotlight.shared.generated.resources.import_glossary_manually
 import spotlight.shared.generated.resources.import_glossary_title
+import spotlight.shared.generated.resources.overwrite
+import spotlight.shared.generated.resources.overwrite_glossary_message
+import spotlight.shared.generated.resources.overwrite_glossary_title
 
 @Composable
 fun ImportGlossaryScreen(component: ImportGlossaryComponent) {
@@ -199,5 +204,16 @@ fun ImportGlossaryScreen(component: ImportGlossaryComponent) {
                 }
             }
         }
+    }
+
+    model.overwriteRequest?.let { glossary ->
+        ConfirmDialog(
+            title = stringResource(Res.string.overwrite_glossary_title),
+            text = stringResource(Res.string.overwrite_glossary_message, glossary.code),
+            confirmButtonText = stringResource(Res.string.overwrite),
+            dismissButtonText = stringResource(Res.string.cancel),
+            onConfirm = component::onOverwriteConfirmed,
+            onDismiss = component::onOverwriteDismissed
+        )
     }
 }

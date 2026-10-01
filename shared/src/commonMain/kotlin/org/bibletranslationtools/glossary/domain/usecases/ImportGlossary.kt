@@ -24,6 +24,21 @@ class ImportGlossary(
         val resource: Resource
     )
 
+    /**
+     * Returns the glossary already stored on the device that importing
+     * [file] would overwrite, or null if there is none.
+     */
+    suspend fun findExisting(file: PlatformFile): Glossary? {
+        val json = fileSystemProvider.readZipEntry(file, "glossary.json") ?: return null
+        val glossaryDict: ManifestGlossary = Utils.JsonLenient.decodeFromString(json)
+
+        return glossaryRepository.getGlossaries().firstOrNull {
+            it.code == glossaryDict.code &&
+                    it.sourceLanguage.slug == glossaryDict.sourceLanguage &&
+                    it.targetLanguage.slug == glossaryDict.targetLanguage
+        }
+    }
+
     suspend operator fun invoke(file: PlatformFile): Result {
 
         val tempDir = fileSystemProvider.createTempDir("glossary")

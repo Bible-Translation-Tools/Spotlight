@@ -38,12 +38,15 @@ interface ImportGlossaryComponent : DrawerContext {
         val focusedIndex: Int? = null,
         val autoImportManually: Boolean = false,
         val progress: Progress? = null,
-        val error: String? = null
+        val error: String? = null,
+        val overwriteRequest: Glossary? = null
     )
 
     fun onOtpAction(action: OtpAction)
     fun onDownloadClicked()
     fun onImportClicked(file: PlatformFile)
+    fun onOverwriteConfirmed()
+    fun onOverwriteDismissed()
 }
 
 class DefaultImportGlossaryComponent(
@@ -63,6 +66,8 @@ class DefaultImportGlossaryComponent(
     override val model: Value<ImportGlossaryComponent.Model> = _model
 
     private val componentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private var pendingImportFile: PlatformFile? = null
 
     init {
         doOnResume {
@@ -168,22 +173,52 @@ class DefaultImportGlossaryComponent(
 
     override fun onImportClicked(file: PlatformFile) {
         componentScope.launch {
-            val progress = Progress(
-                value = -1f,
-                message = getString(Res.string.importing_glossary)
-            )
-            _model.update { it.copy(progress = progress) }
-
-            val result = withContext(Dispatchers.Default) {
-                importGlossaryUseCase(file)
+            val existing = withContext(Dispatchers.Default) {
+                try {
+                    importGlossaryUseCase.findExisting(file)
+                } catch (e: Exception) {
+                    this@DefaultImportGlossaryComponent.logE("Failed to check existing glossary", e)
+                    null
+                }
             }
 
-            onSelectResource(result.resource)
-            onSelectGlossary(result.glossary, true)
-
-            _model.update { it.copy(progress = null) }
-
-            onImportFinished()
+            if (existing != null) {
+                pendingImportFile = file
+                _model.update { it.copy(overwriteRequest = existing) }
+            } else {
+                importFile(file)
+            }
         }
+    }
+
+    override fun onOverwriteConfirmed() {
+        val file = pendingImportFile ?: return
+        pendingImportFile = null
+        _model.update { it.copy(overwriteRequest = null) }
+        componentScope.launch { importFile(file) }
+    }
+
+    override fun onOverwriteDismissed() {
+        pendingImportFile = null
+        _model.update { it.copy(overwriteRequest = null) }
+    }
+
+    private suspend fun importFile(file: PlatformFile) {
+        val progress = Progress(
+            value = -1f,
+            message = getString(Res.string.importing_glossary)
+        )
+        _model.update { it.copy(progress = progress) }
+
+        val result = withContext(Dispatchers.Default) {
+            importGlossaryUseCase(file)
+        }
+
+        onSelectResource(result.resource)
+        onSelectGlossary(result.glossary, true)
+
+        _model.update { it.copy(progress = null) }
+
+        onImportFinished()
     }
 }
