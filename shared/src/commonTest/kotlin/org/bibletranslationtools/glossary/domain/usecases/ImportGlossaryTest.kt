@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
 import kotlinx.io.files.Path
 
+import org.bibletranslationtools.glossary.data.Glossary
 import org.bibletranslationtools.glossary.data.Language
 import org.bibletranslationtools.glossary.data.Resource
 import org.bibletranslationtools.glossary.domain.FileSystemProvider
@@ -17,6 +18,7 @@ import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ImportGlossaryTest {
 
@@ -218,5 +220,76 @@ class ImportGlossaryTest {
         } catch (e: IllegalArgumentException) {
             assertEquals("Source language not found in database", e.message)
         }
+    }
+
+    @Test
+    fun testFindExistingReturnsMatchingGlossary() = runTest {
+        val file: PlatformFile = mockk()
+        val glossaryJson = """
+            {
+                "code": "G1",
+                "sourceLanguage": "en",
+                "targetLanguage": "es",
+                "version": 1,
+                "createdAt": "2024-01-01T00:00:00",
+                "updatedAt": "2024-01-01T00:00:00",
+                "resource": {
+                    "language": "en",
+                    "type": "ulb",
+                    "version": "1"
+                },
+                "phrases": []
+            }
+        """.trimIndent()
+
+        val english = Language("en", "English", "ltr")
+        val spanish = Language("es", "Spanish", "ltr")
+        val french = Language("fr", "French", "ltr")
+        val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
+        val otherTarget = Glossary(code = "G1", sourceLanguage = english, targetLanguage = french, version = 1, id = "g2")
+
+        coEvery { fileSystemProvider.readZipEntry(file, "glossary.json") } returns glossaryJson
+        coEvery { repository.getGlossaries() } returns listOf(otherTarget, existing)
+
+        assertEquals(existing, importGlossary.findExisting(file))
+    }
+
+    @Test
+    fun testFindExistingReturnsNullWhenNoMatch() = runTest {
+        val file: PlatformFile = mockk()
+        val glossaryJson = """
+            {
+                "code": "G2",
+                "sourceLanguage": "en",
+                "targetLanguage": "es",
+                "version": 1,
+                "createdAt": "2024-01-01T00:00:00",
+                "updatedAt": "2024-01-01T00:00:00",
+                "resource": {
+                    "language": "en",
+                    "type": "ulb",
+                    "version": "1"
+                },
+                "phrases": []
+            }
+        """.trimIndent()
+
+        val english = Language("en", "English", "ltr")
+        val spanish = Language("es", "Spanish", "ltr")
+        val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
+
+        coEvery { fileSystemProvider.readZipEntry(file, "glossary.json") } returns glossaryJson
+        coEvery { repository.getGlossaries() } returns listOf(existing)
+
+        assertNull(importGlossary.findExisting(file))
+    }
+
+    @Test
+    fun testFindExistingReturnsNullWhenGlossaryJsonMissing() = runTest {
+        val file: PlatformFile = mockk()
+
+        coEvery { fileSystemProvider.readZipEntry(file, "glossary.json") } returns null
+
+        assertNull(importGlossary.findExisting(file))
     }
 }

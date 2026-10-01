@@ -38,6 +38,7 @@ interface FileSystemProvider {
 
     suspend fun zipDirectory(source: Path, target: PlatformFile)
     suspend fun extractZip(file: PlatformFile, destDir: Path)
+    suspend fun readZipEntry(file: PlatformFile, entryName: String): String?
 }
 
 class FileSystemProviderImpl : FileSystemProvider {
@@ -208,5 +209,9 @@ class FileSystemProviderImpl : FileSystemProvider {
 
     override suspend fun extractZip(file: PlatformFile, destDir: Path) {
         ZipUtils.extractZip(file, destDir)
+    }
+
+    override suspend fun readZipEntry(file: PlatformFile, entryName: String): String? {
+        return ZipUtils.readEntry(file, entryName)
     }
 }

@@ -61,6 +61,23 @@ object ZipUtils {
         }
     }
 
+    fun readEntry(file: PlatformFile, entryName: String): String? {
+        val source: Source = file.source().buffered()
+        val zipInputStream = ZipInputStream(source.asInputStream())
+
+        zipInputStream.use { zis ->
+            var entry: ZipEntry? = zis.nextEntry
+            while (entry != null) {
+                if (!entry.isDirectory && entry.name == entryName) {
+                    return zis.readBytes().decodeToString()
+                }
+                zis.closeEntry()
+                entry = zis.nextEntry
+            }
+        }
+        return null
+    }
+
     fun zipDirectory(source: Path, target: PlatformFile) {
         if (!SystemFileSystem.exists(source)
             || SystemFileSystem.metadataOrNull(source)?.isDirectory != true) {
