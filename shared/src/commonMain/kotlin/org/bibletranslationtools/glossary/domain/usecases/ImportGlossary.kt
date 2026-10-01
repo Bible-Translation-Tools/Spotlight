@@ -115,7 +115,7 @@ class ImportGlossary(
         val phrases = readYaml(Path(rootDir, GlossaryArchive.CONTENT_DIR, GlossaryArchive.PHRASES))
             ?: throw IllegalArgumentException("$contentFile not found in zip file")
         // Server downloads carry no pending phrases
-        val pendingPhrases = readYaml(Path(rootDir, GlossaryArchive.PENDING_DIR, GlossaryArchive.PHRASES))
+        val pendingPhrases = readYaml(Path(rootDir, GlossaryArchive.CONTENT_DIR, GlossaryArchive.PENDING))
             ?: "[]"
 
         return Backup(

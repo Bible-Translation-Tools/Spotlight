@@ -17,6 +17,7 @@ import org.wycliffeassociates.resourcecontainer.entity.DublinCore
 import org.wycliffeassociates.resourcecontainer.entity.Language
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import org.wycliffeassociates.resourcecontainer.entity.Source
+import spotlight.shared.generated.resources.Res
 
 class ExportGlossary(
     private val glossaryRepository: GlossaryRepository,
@@ -31,14 +32,15 @@ class ExportGlossary(
         val tempDir = fileSystemProvider.createTempDir("glossary")
         val rootDir = Path(tempDir, GlossaryArchive.rootDirName(glossary.targetLanguage.slug))
         val contentDir = Path(rootDir, GlossaryArchive.CONTENT_DIR)
-        val pendingDir = Path(rootDir, GlossaryArchive.PENDING_DIR)
         fileSystemProvider.createDirectories(contentDir)
-        fileSystemProvider.createDirectories(pendingDir)
 
         writeYaml(manifest(glossary, resource), Path(rootDir, GlossaryArchive.MANIFEST))
-        fileSystemProvider.writeFile(GlossaryArchive.LICENSE_TEXT, Path(rootDir, GlossaryArchive.LICENSE))
+        fileSystemProvider.writeFile(
+            Res.readBytes(GlossaryArchive.LICENSE_ASSET),
+            Path(rootDir, GlossaryArchive.LICENSE)
+        )
         writeYaml(phrases.toManifest(), Path(contentDir, GlossaryArchive.PHRASES))
-        writeYaml(pendingPhrases.toManifest(), Path(pendingDir, GlossaryArchive.PHRASES))
+        writeYaml(pendingPhrases.toManifest(), Path(contentDir, GlossaryArchive.PENDING))
 
         val resourceFile = Path(fileSystemProvider.sources, resource.filename)
         if (!fileSystemProvider.exists(resourceFile)) {

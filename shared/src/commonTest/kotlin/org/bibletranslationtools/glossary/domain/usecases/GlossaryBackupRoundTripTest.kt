@@ -15,9 +15,11 @@ import org.bibletranslationtools.glossary.data.Phrase
 import org.bibletranslationtools.glossary.data.Resource
 import org.bibletranslationtools.glossary.domain.FileSystemProvider
 import org.bibletranslationtools.glossary.domain.FileSystemProviderImpl
+import org.bibletranslationtools.glossary.domain.GlossaryArchive
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import spotlight.shared.generated.resources.Res
 import org.wycliffeassociates.resourcecontainer.entity.Source
 import java.io.File
 import java.util.zip.ZipFile
@@ -99,10 +101,15 @@ class GlossaryBackupRoundTripTest : BaseTest() {
                 "es_glossary/manifest.yaml",
                 "es_glossary/LICENSE.md",
                 "es_glossary/content/phrases.yaml",
-                "es_glossary/pending/phrases.yaml",
+                "es_glossary/content/pending_phrases.yaml",
                 "es_glossary/en_ulb.zip"
             ),
             entries
+        )
+
+        assertEquals(
+            Res.readBytes(GlossaryArchive.LICENSE_ASSET).decodeToString(),
+            readEntry(target, "es_glossary/LICENSE.md")
         )
 
         val manifest = readEntry(target, "es_glossary/manifest.yaml")

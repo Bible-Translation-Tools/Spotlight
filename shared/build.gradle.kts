@@ -121,6 +121,22 @@ dependencies {
     androidRuntimeClasspath(libs.ui.tooling)
 }
 
+// The glossary backup license lives with the API (api/src/assets/LICENSE.md, bundled
+// by wrangler). Copy it into generated compose resources at build time
+val glossaryLicenseResources = layout.buildDirectory.dir("generated/glossaryLicense/composeResources")
+val copyGlossaryLicense = tasks.register<Copy>("copyGlossaryLicense") {
+    description = "Copy license asset"
+    from(rootProject.layout.projectDirectory.file("api/src/assets/LICENSE.md")) {
+        into("files/glossary")
+    }
+    into(glossaryLicenseResources)
+}
+
 compose.resources {
     publicResClass = true
+
+    // Platform source sets, as commonMain keeps src/commonMain/composeResources
+    val licenseDir = copyGlossaryLicense.map { glossaryLicenseResources.get() }
+    customDirectory(sourceSetName = "androidMain", directoryProvider = licenseDir)
+    customDirectory(sourceSetName = "jvmMain", directoryProvider = licenseDir)
 }

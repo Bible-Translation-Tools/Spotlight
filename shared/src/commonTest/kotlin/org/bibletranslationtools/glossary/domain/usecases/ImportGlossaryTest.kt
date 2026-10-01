@@ -85,7 +85,7 @@ class ImportGlossaryTest {
     fun testImportSuccess() = runTest {
         stubManifest("es_glossary/manifest.yaml", manifestYaml())
         stubYaml(rootDir, "content/phrases.yaml", contentYaml)
-        stubYaml(rootDir, "pending/phrases.yaml", pendingYaml)
+        stubYaml(rootDir, "content/pending_phrases.yaml", pendingYaml)
         stubResourceAndRepository(rootDir)
 
         val result = importGlossary(file)
@@ -121,7 +121,7 @@ class ImportGlossaryTest {
     fun testImportFromZipRoot() = runTest {
         stubManifest("manifest.yaml", manifestYaml())
         stubYaml(tempDir, "content/phrases.yaml", contentYaml)
-        coEvery { fileSystemProvider.exists(Path(tempDir, "pending/phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(tempDir, "content/pending_phrases.yaml")) } returns false
         stubResourceAndRepository(tempDir)
 
         val result = importGlossary(file)
@@ -152,7 +152,7 @@ class ImportGlossaryTest {
     fun testImportFailureMissingSource() = runTest {
         stubManifest("es_glossary/manifest.yaml", manifestYaml(source = ""))
         stubYaml(rootDir, "content/phrases.yaml", "[]")
-        coEvery { fileSystemProvider.exists(Path(rootDir, "pending/phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, "content/pending_phrases.yaml")) } returns false
 
         assertImportFails("Source text not found in manifest.yaml")
     }
@@ -161,7 +161,7 @@ class ImportGlossaryTest {
     fun testImportFailureMissingResourceZip() = runTest {
         stubManifest("es_glossary/manifest.yaml", manifestYaml())
         stubYaml(rootDir, "content/phrases.yaml", "[]")
-        coEvery { fileSystemProvider.exists(Path(rootDir, "pending/phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, "content/pending_phrases.yaml")) } returns false
         coEvery { fileSystemProvider.exists(Path(rootDir, "en_ulb.zip")) } returns false
 
         assertImportFails("en_ulb.zip not found in zip file")
@@ -171,7 +171,7 @@ class ImportGlossaryTest {
     fun testImportFailureMissingLanguage() = runTest {
         stubManifest("es_glossary/manifest.yaml", manifestYaml())
         stubYaml(rootDir, "content/phrases.yaml", "[]")
-        coEvery { fileSystemProvider.exists(Path(rootDir, "pending/phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, "content/pending_phrases.yaml")) } returns false
         stubResourceAndRepository(rootDir)
         coEvery { repository.getLanguage("en") } returns null
 
