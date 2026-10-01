@@ -60,7 +60,7 @@ object Utils {
     val Yaml: ObjectMapper = ObjectMapper(
         YAMLFactory.builder()
             // SnakeYAML rejects documents over 3M code points by default,
-            // a large glossary's content.yml can exceed that
+            // a large glossary's phrases.yaml can exceed that
             .loaderOptions(LoaderOptions().apply { codePointLimit = 100 * 1024 * 1024 })
             .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
             // Keep long descriptions on one line instead of wrapping them

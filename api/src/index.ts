@@ -17,11 +17,7 @@ import {
 } from "./db/schema";
 import { and, eq, gt, sql, or, lt, ne } from "drizzle-orm";
 import { unzipSync, zipSync } from "fflate";
-import {
-  dump as dumpYaml,
-  load as parseYaml,
-  FAILSAFE_SCHEMA,
-} from "js-yaml";
+import { load as parseYaml } from "js-yaml";
 import {
   Glossary,
   GlossaryUpdate,
@@ -29,12 +25,17 @@ import {
   PhraseReview,
   GlossaryUser,
   PendingPhrase,
-  GlossaryManifest,
 } from "./glossary.types";
 import { Manifest } from "./resource.types";
 import { ErrorDetails, TokenRes, User, UserRes } from "./user.types";
 import { jwt, sign } from "hono/jwt";
-import validateEmoji, { GLOSSARY_CONTENT, GLOSSARY_MANIFEST } from "./utils";
+import validateEmoji from "./utils";
+import {
+  buildGlossaryArchive,
+  GLOSSARY_CONTENT,
+  GLOSSARY_MANIFEST,
+  readGlossaryArchive,
+} from "./glossary.archive";
 import { v4 as uuidv4 } from "uuid";
 
 interface AppVariables extends JwtVariables {
@@ -230,24 +231,11 @@ app.post("/private/api/glossary", async (c) => {
 
     const decoder = new TextDecoder();
 
-    let glossary: Glossary | null = null;
     let manifest: Manifest | null = null;
 
     const mainArchive = unzipSync(new Uint8Array(zipArrayBuffer));
 
-    const glossaryManifestFile = mainArchive[GLOSSARY_MANIFEST];
-    const glossaryContentFile = mainArchive[GLOSSARY_CONTENT];
-    if (glossaryManifestFile && glossaryContentFile) {
-      // Failsafe schema reads every value as a string, so a phrase like
-      // "no" or "123" can't turn into a boolean or number
-      const glossaryManifest = parseYaml(decoder.decode(glossaryManifestFile), {
-        schema: FAILSAFE_SCHEMA,
-      }) as GlossaryManifest;
-      const phrases = (parseYaml(decoder.decode(glossaryContentFile), {
-        schema: FAILSAFE_SCHEMA,
-      }) ?? []) as Phrase[];
-      glossary = { ...glossaryManifest, phrases };
-    }
+    let glossary = readGlossaryArchive(mainArchive);
 
     const resourceZipFilename = Object.keys(mainArchive).find((name) =>
       name.endsWith(".zip"),
@@ -267,7 +255,9 @@ app.post("/private/api/glossary", async (c) => {
         }
       }
 
-      await c.env.R2_BUCKET.put(resourceZipFilename, resourceZipFile, {
+      // Keyed by file name only: in the RC it sits under es_glossary/
+      const resourceKey = resourceZipFilename.split("/").pop()!;
+      await c.env.R2_BUCKET.put(resourceKey, resourceZipFile, {
         httpMetadata: {
           contentType: "application/zip",
         },
@@ -505,8 +495,6 @@ app.get("/public/api/glossary/:code", async (c) => {
   const code = c.req.param("code");
 
   try {
-    const encoder = new TextEncoder();
-
     // TODO There is a chance to have two or more glossaries with the same code but different IDs
     // Should we handle that case and return a list or just the first one?
     const glossary =
@@ -548,33 +536,11 @@ app.get("/public/api/glossary/:code", async (c) => {
       );
     }
     const resourceBytes = await resourceFile.arrayBuffer();
-    const glossaryManifest: GlossaryManifest = {
-      id: glossary.id,
-      code: glossary.code,
-      sourceLanguage: glossary.sourceLanguage,
-      targetLanguage: glossary.targetLanguage,
-      version: glossary.version,
-      createdAt: glossary.createdAt.toISOString(),
-      updatedAt: glossary.updatedAt.toISOString(),
-      resource: glossary.resource,
-    };
-    // Sorted, so the same glossary always produces the same file
-    const phrases = glossary.phrases
-      .map((phrase) => ({
-        ...phrase,
-        createdAt: phrase.createdAt.toISOString(),
-        updatedAt: phrase.updatedAt.toISOString(),
-      }))
-      .sort((a, b) => (a.phrase < b.phrase ? -1 : a.phrase > b.phrase ? 1 : 0));
-
-    // lineWidth -1 keeps long descriptions on one line instead of folding them
-    const mainZipContents = {
-      [GLOSSARY_MANIFEST]: encoder.encode(
-        dumpYaml(glossaryManifest, { lineWidth: -1 }),
-      ),
-      [GLOSSARY_CONTENT]: encoder.encode(dumpYaml(phrases, { lineWidth: -1 })),
-      [resourceFilename]: new Uint8Array(resourceBytes),
-    };
+    const mainZipContents = buildGlossaryArchive(
+      glossary,
+      resourceFilename,
+      new Uint8Array(resourceBytes),
+    );
     const mainZipBytes = zipSync(mainZipContents);
     const filename = `glossary-${code}.zip`;
 

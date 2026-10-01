@@ -27,6 +27,55 @@ class ImportGlossaryTest {
     private val resourceContainerAccessor: ResourceContainerAccessor = mockk()
     private lateinit var importGlossary: ImportGlossary
 
+    private val file: PlatformFile = mockk()
+    private val tempDir = Path("/tmp/glossary")
+    private val rootDir = Path(tempDir, "es_glossary")
+
+    private val english = Language("en", "English", "ltr")
+    private val spanish = Language("es", "Spanish", "ltr")
+
+    private val resource = Resource(
+        id = 1L,
+        lang = "en",
+        type = "ulb",
+        version = "1",
+        format = "usfm",
+        url = "http://example.com",
+        filename = "en_ulb.zip",
+        createdAt = LocalDateTime(2024, 1, 1, 0, 0),
+        modifiedAt = LocalDateTime(2024, 1, 1, 0, 0),
+        books = emptyList()
+    )
+
+    private val contentYaml = """
+        - phrase: "God"
+          spelling: "Dios"
+          description: "line 1"
+          createdAt: "2024-01-01T00:00:00"
+          updatedAt: "2024-01-01T00:00:00"
+        - phrase: "Holy Spirit"
+          spelling: ""
+          description: |-
+            line 1
+            line 2
+          audio: ""
+          createdAt: "2024-01-01T00:00:00"
+          updatedAt: "2024-01-01T00:00:00"
+        - phrase: "god"
+          spelling: ""
+          description: ""
+          createdAt: "2024-01-01T00:00:00"
+          updatedAt: "2024-01-01T00:00:00"
+    """.trimIndent()
+
+    private val pendingYaml = """
+        - phrase: "grace"
+          spelling: ""
+          description: ""
+          createdAt: "2024-01-01T00:00:00"
+          updatedAt: "2024-01-01T00:00:00"
+    """.trimIndent()
+
     @BeforeTest
     fun setUp() {
         importGlossary = ImportGlossary(repository, fileSystemProvider, resourceContainerAccessor)
@@ -34,97 +83,29 @@ class ImportGlossaryTest {
 
     @Test
     fun testImportSuccess() = runTest {
-        val file: PlatformFile = mockk()
-        val tempDir = Path("/tmp/glossary")
-        val manifestPath = Path(tempDir, "manifest.yml")
-        val resourceZipPath = Path(tempDir, "en_ulb.zip")
-        
-        val manifestYaml = """
-            id: "remote-g1"
-            code: "G1"
-            sourceLanguage: "en"
-            targetLanguage: "es"
-            version: 1
-            createdAt: "2024-01-01T00:00:00"
-            updatedAt: "2024-01-01T00:00:00"
-            resource:
-              language: "en"
-              type: "ulb"
-              version: "1"
-        """.trimIndent()
-        
-        val contentYaml = """
-            - phrase: "God"
-              spelling: "Dios"
-              description: "line 1"
-              createdAt: "2024-01-01T00:00:00"
-              updatedAt: "2024-01-01T00:00:00"
-            - phrase: "Holy Spirit"
-              spelling: ""
-              description: |-
-                line 1
-                line 2
-              audio: ""
-              createdAt: "2024-01-01T00:00:00"
-              updatedAt: "2024-01-01T00:00:00"
-            - phrase: "god"
-              spelling: ""
-              description: ""
-              createdAt: "2024-01-01T00:00:00"
-              updatedAt: "2024-01-01T00:00:00"
-        """.trimIndent()
-        val pendingYaml = """
-            - phrase: "grace"
-              spelling: ""
-              description: ""
-              createdAt: "2024-01-01T00:00:00"
-              updatedAt: "2024-01-01T00:00:00"
-        """.trimIndent()
-
-        coEvery { fileSystemProvider.exists(manifestPath) } returns true
-        coEvery { fileSystemProvider.readFile(manifestPath) } returns manifestYaml
-        coEvery { fileSystemProvider.exists(resourceZipPath) } returns true
-        stubYaml(tempDir, "content.yml", contentYaml)
-        stubYaml(tempDir, "pending.yml", pendingYaml)
-
-        val sourceLang = Language("en", "English", "ltr")
-        val targetLang = Language("es", "Spanish", "ltr")
-        val resource = Resource(
-            id = 1L,
-            lang = "en",
-            type = "ulb",
-            version = "1",
-            format = "usfm",
-            url = "http://example.com",
-            filename = "en_ulb.zip",
-            createdAt = LocalDateTime(2024, 1, 1, 0, 0),
-            modifiedAt = LocalDateTime(2024, 1, 1, 0, 0),
-            books = emptyList()
-        )
-
-        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
-        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        
-        coEvery { repository.getLanguage("en") } returns sourceLang
-        coEvery { repository.getLanguage("es") } returns targetLang
-        coEvery { repository.addResource(any()) } returns Unit
-        coEvery { repository.getResource("en", "ulb") } returns resource
-        coEvery { repository.addGlossary(any()) } returns "g1"
-        coEvery { repository.batchAddPhrases(any()) } returns Unit
-        coEvery { repository.batchAddPendingPhrases(any()) } returns Unit
-        coEvery { fileSystemProvider.saveSource(any<Path>(), any()) } returns Path("/sources/en_ulb.zip")
-        every { resourceContainerAccessor.read(any<Path>()) } returns resource
+        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubYaml(rootDir, "content/phrases.yaml", contentYaml)
+        stubYaml(rootDir, "pending/phrases.yaml", pendingYaml)
+        stubResourceAndRepository(rootDir)
 
         val result = importGlossary(file)
 
         assertEquals("g1", result.glossary.id)
-        assertEquals("remote-g1", result.glossary.remoteId)
         assertEquals(resource.id, result.resource.id)
+        with(result.glossary) {
+            assertEquals("G1", code)
+            assertEquals("remote-g1", remoteId)
+            assertEquals(3, version)
+            assertEquals(english, sourceLanguage)
+            assertEquals(spanish, targetLanguage)
+            assertEquals(LocalDateTime(2024, 1, 1, 0, 0), createdAt)
+            assertEquals(LocalDateTime(2024, 2, 1, 0, 0), updatedAt)
+        }
 
         coVerify {
-            fileSystemProvider.createTempDir(any())
             fileSystemProvider.extractZip(file, tempDir)
-            repository.addGlossary(any())
+            fileSystemProvider.saveSource(Path(rootDir, "en_ulb.zip"), "en_ulb.zip")
+            repository.getResource("en", "ulb")
             repository.batchAddPhrases(match { phrases ->
                 phrases.map { it.phrase } == listOf("God", "Holy Spirit", "god") &&
                         phrases[1].description == "line 1\nline 2" &&
@@ -137,159 +118,73 @@ class ImportGlossaryTest {
     }
 
     @Test
-    fun testImportFailureMissingManifest() = runTest {
-        val file: PlatformFile = mockk()
-        val tempDir = Path("/tmp/glossary")
-        val manifestPath = Path(tempDir, "manifest.yml")
+    fun testImportFromZipRoot() = runTest {
+        stubManifest("manifest.yaml", manifestYaml())
+        stubYaml(tempDir, "content/phrases.yaml", contentYaml)
+        coEvery { fileSystemProvider.exists(Path(tempDir, "pending/phrases.yaml")) } returns false
+        stubResourceAndRepository(tempDir)
 
-        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
-        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        coEvery { fileSystemProvider.exists(manifestPath) } returns false
+        val result = importGlossary(file)
 
-        try {
-            importGlossary(file)
-            kotlin.test.fail("Should throw IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            assertEquals("manifest.yml not found in zip file", e.message)
+        assertEquals("G1", result.glossary.code)
+        coVerify {
+            fileSystemProvider.saveSource(Path(tempDir, "en_ulb.zip"), "en_ulb.zip")
+            repository.batchAddPendingPhrases(emptyList())
         }
+    }
+
+    @Test
+    fun testImportFailureMissingManifest() = runTest {
+        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns null
+
+        assertImportFails("manifest.yaml not found in zip file")
     }
 
     @Test
     fun testImportFailureMissingContent() = runTest {
-        val file: PlatformFile = mockk()
-        val tempDir = Path("/tmp/glossary")
+        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        coEvery { fileSystemProvider.exists(Path(rootDir, "content/phrases.yaml")) } returns false
 
-        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
-        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        stubYaml(tempDir, "manifest.yml", "code: \"G1\"")
-        coEvery { fileSystemProvider.exists(Path(tempDir, "content.yml")) } returns false
+        assertImportFails("content/phrases.yaml not found in zip file")
+    }
 
-        try {
-            importGlossary(file)
-            kotlin.test.fail("Should throw IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            assertEquals("content.yml not found in zip file", e.message)
-        }
+    @Test
+    fun testImportFailureMissingSource() = runTest {
+        stubManifest("es_glossary/manifest.yaml", manifestYaml(source = ""))
+        stubYaml(rootDir, "content/phrases.yaml", "[]")
+        coEvery { fileSystemProvider.exists(Path(rootDir, "pending/phrases.yaml")) } returns false
+
+        assertImportFails("Source text not found in manifest.yaml")
     }
 
     @Test
     fun testImportFailureMissingResourceZip() = runTest {
-        val file: PlatformFile = mockk()
-        val tempDir = Path("/tmp/glossary")
-        val manifestPath = Path(tempDir, "manifest.yml")
-        val resourceZipPath = Path(tempDir, "en_ulb.zip")
-        
-        val manifestYaml = """
-            id: "remote-g1"
-            code: "G1"
-            sourceLanguage: "en"
-            targetLanguage: "es"
-            version: 1
-            createdAt: "2024-01-01T00:00:00"
-            updatedAt: "2024-01-01T00:00:00"
-            resource:
-              language: "en"
-              type: "ulb"
-              version: "1"
-        """.trimIndent()
+        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubYaml(rootDir, "content/phrases.yaml", "[]")
+        coEvery { fileSystemProvider.exists(Path(rootDir, "pending/phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, "en_ulb.zip")) } returns false
 
-        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
-        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        coEvery { fileSystemProvider.exists(manifestPath) } returns true
-        coEvery { fileSystemProvider.readFile(manifestPath) } returns manifestYaml
-        stubYaml(tempDir, "content.yml", "[]")
-        coEvery { fileSystemProvider.exists(Path(tempDir, "pending.yml")) } returns false
-        coEvery { fileSystemProvider.exists(resourceZipPath) } returns false
-
-        try {
-            importGlossary(file)
-            kotlin.test.fail("Should throw IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            assertEquals("en_ulb.zip not found in zip file", e.message)
-        }
+        assertImportFails("en_ulb.zip not found in zip file")
     }
 
     @Test
     fun testImportFailureMissingLanguage() = runTest {
-        val file: PlatformFile = mockk()
-        val tempDir = Path("/tmp/glossary")
-        val manifestPath = Path(tempDir, "manifest.yml")
-        val resourceZipPath = Path(tempDir, "en_ulb.zip")
-        
-        val manifestYaml = """
-            id: "remote-g1"
-            code: "G1"
-            sourceLanguage: "en"
-            targetLanguage: "es"
-            version: 1
-            createdAt: "2024-01-01T00:00:00"
-            updatedAt: "2024-01-01T00:00:00"
-            resource:
-              language: "en"
-              type: "ulb"
-              version: "1"
-        """.trimIndent()
-
-        val resource = Resource(
-            id = 1L,
-            lang = "en",
-            type = "ulb",
-            version = "1",
-            format = "usfm",
-            url = "http://example.com",
-            filename = "en_ulb.zip",
-            createdAt = LocalDateTime(2024, 1, 1, 0, 0),
-            modifiedAt = LocalDateTime(2024, 1, 1, 0, 0),
-            books = emptyList()
-        )
-
-        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
-        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        coEvery { fileSystemProvider.exists(manifestPath) } returns true
-        coEvery { fileSystemProvider.readFile(manifestPath) } returns manifestYaml
-        stubYaml(tempDir, "content.yml", "[]")
-        coEvery { fileSystemProvider.exists(Path(tempDir, "pending.yml")) } returns false
-        coEvery { fileSystemProvider.exists(resourceZipPath) } returns true
-        every { resourceContainerAccessor.read(any<Path>()) } returns resource
-        coEvery { repository.addResource(any()) } returns Unit
-        coEvery { repository.getResource("en", "ulb") } returns resource
-        coEvery { fileSystemProvider.saveSource(any<Path>(), any()) } returns Path("/sources/en_ulb.zip")
-
-        // Mock database languages lookup returning null to trigger failure
+        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubYaml(rootDir, "content/phrases.yaml", "[]")
+        coEvery { fileSystemProvider.exists(Path(rootDir, "pending/phrases.yaml")) } returns false
+        stubResourceAndRepository(rootDir)
         coEvery { repository.getLanguage("en") } returns null
-        coEvery { repository.getLanguage("es") } returns Language("es", "Spanish", "ltr")
 
-        try {
-            importGlossary(file)
-            kotlin.test.fail("Should throw IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            assertEquals("Source language not found in database", e.message)
-        }
+        assertImportFails("Source language not found in database")
     }
 
     @Test
     fun testFindExistingReturnsMatchingGlossary() = runTest {
-        val file: PlatformFile = mockk()
-        val manifestYaml = """
-            code: "G1"
-            sourceLanguage: "en"
-            targetLanguage: "es"
-            version: 1
-            createdAt: "2024-01-01T00:00:00"
-            updatedAt: "2024-01-01T00:00:00"
-            resource:
-              language: "en"
-              type: "ulb"
-              version: "1"
-        """.trimIndent()
-
-        val english = Language("en", "English", "ltr")
-        val spanish = Language("es", "Spanish", "ltr")
         val french = Language("fr", "French", "ltr")
         val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
         val otherTarget = Glossary(code = "G1", sourceLanguage = english, targetLanguage = french, version = 1, id = "g2")
 
-        coEvery { fileSystemProvider.readZipEntry(file, "manifest.yml") } returns manifestYaml
+        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns ("es_glossary/manifest.yaml" to manifestYaml())
         coEvery { repository.getGlossaries() } returns listOf(otherTarget, existing)
 
         assertEquals(existing, importGlossary.findExisting(file))
@@ -297,25 +192,9 @@ class ImportGlossaryTest {
 
     @Test
     fun testFindExistingReturnsNullWhenNoMatch() = runTest {
-        val file: PlatformFile = mockk()
-        val manifestYaml = """
-            code: "G2"
-            sourceLanguage: "en"
-            targetLanguage: "es"
-            version: 1
-            createdAt: "2024-01-01T00:00:00"
-            updatedAt: "2024-01-01T00:00:00"
-            resource:
-              language: "en"
-              type: "ulb"
-              version: "1"
-        """.trimIndent()
-
-        val english = Language("en", "English", "ltr")
-        val spanish = Language("es", "Spanish", "ltr")
         val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
 
-        coEvery { fileSystemProvider.readZipEntry(file, "manifest.yml") } returns manifestYaml
+        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns ("es_glossary/manifest.yaml" to manifestYaml(code = "G2"))
         coEvery { repository.getGlossaries() } returns listOf(existing)
 
         assertNull(importGlossary.findExisting(file))
@@ -323,15 +202,72 @@ class ImportGlossaryTest {
 
     @Test
     fun testFindExistingReturnsNullWhenManifestMissing() = runTest {
-        val file: PlatformFile = mockk()
-
-        coEvery { fileSystemProvider.readZipEntry(file, "manifest.yml") } returns null
+        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns null
 
         assertNull(importGlossary.findExisting(file))
+    }
+
+    private fun manifestYaml(
+        code: String = "G1",
+        source: String = """
+            |  source:
+            |    - identifier: "ulb"
+            |      language: "en"
+            |      version: "1"
+        """.trimMargin()
+    ) = """
+        |dublin_core:
+        |  conformsto: "rc0.2"
+        |  type: "dict"
+        |  format: "text/yaml"
+        |  identifier: "glossary"
+        |  language:
+        |    direction: "ltr"
+        |    identifier: "es"
+        |    title: "Español"
+        |$source
+        |  issued: "2024-01-01T00:00:00"
+        |  modified: "2024-02-01T00:00:00"
+        |  version: "3"
+        |projects:
+        |  - identifier: "glossary"
+        |    sort: 1
+        |    path: "./content"
+        |glossary:
+        |  code: "$code"
+        |  id: "remote-g1"
+    """.trimMargin()
+
+    private fun stubManifest(entryName: String, yaml: String) {
+        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns (entryName to yaml)
+        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
+        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
     }
 
     private fun stubYaml(dir: Path, name: String, content: String) {
         coEvery { fileSystemProvider.exists(Path(dir, name)) } returns true
         coEvery { fileSystemProvider.readFile(Path(dir, name)) } returns content
+    }
+
+    private fun stubResourceAndRepository(dir: Path) {
+        coEvery { fileSystemProvider.exists(Path(dir, "en_ulb.zip")) } returns true
+        coEvery { fileSystemProvider.saveSource(any<Path>(), any()) } returns Path("/sources/en_ulb.zip")
+        every { resourceContainerAccessor.read(any<Path>()) } returns resource
+        coEvery { repository.getLanguage("en") } returns english
+        coEvery { repository.getLanguage("es") } returns spanish
+        coEvery { repository.addResource(any()) } returns Unit
+        coEvery { repository.getResource("en", "ulb") } returns resource
+        coEvery { repository.addGlossary(any()) } returns "g1"
+        coEvery { repository.batchAddPhrases(any()) } returns Unit
+        coEvery { repository.batchAddPendingPhrases(any()) } returns Unit
+    }
+
+    private suspend fun assertImportFails(message: String) {
+        try {
+            importGlossary(file)
+            kotlin.test.fail("Should throw IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertEquals(message, e.message)
+        }
     }
 }

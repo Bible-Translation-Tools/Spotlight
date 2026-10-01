@@ -17,6 +17,9 @@ import org.bibletranslationtools.glossary.domain.FileSystemProvider
 import org.bibletranslationtools.glossary.domain.FileSystemProviderImpl
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.entity.Source
+import java.io.File
 import java.util.zip.ZipFile
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -91,13 +94,22 @@ class GlossaryBackupRoundTripTest : BaseTest() {
         val entries = ZipFile(target.toString()).use { zip ->
             zip.entries().toList().filter { !it.isDirectory }.map { it.name }.toSet()
         }
-        assertEquals(setOf("manifest.yml", "content.yml", "pending.yml", "en_ulb.zip"), entries)
+        assertEquals(
+            setOf(
+                "es_glossary/manifest.yaml",
+                "es_glossary/LICENSE.md",
+                "es_glossary/content/phrases.yaml",
+                "es_glossary/pending/phrases.yaml",
+                "es_glossary/en_ulb.zip"
+            ),
+            entries
+        )
 
-        val manifest = readEntry(target, "manifest.yml")
-        assertTrue(manifest.contains("code: \"G1\""), manifest)
-        assertTrue(manifest.contains("id: \"remote-g1\""), manifest)
+        val manifest = readEntry(target, "es_glossary/manifest.yaml")
+        assertTrue(manifest.startsWith("dublin_core:\n"), manifest)
+        assertTrue(manifest.contains("glossary:\n  code: \"G1\"\n  id: \"remote-g1\""), manifest)
 
-        val content = readEntry(target, "content.yml")
+        val content = readEntry(target, "es_glossary/content/phrases.yaml")
         // Multi-line text as a literal block, long text not wrapped
         assertTrue(content.contains("description: |\n    line 1\n    line 2\n"), content)
         assertTrue(content.lines().any { it.endsWith("\"$longDescription\"") }, content)
@@ -105,6 +117,32 @@ class GlossaryBackupRoundTripTest : BaseTest() {
         val order = Regex("^- phrase: \"(.*)\"$", RegexOption.MULTILINE)
             .findAll(content).map { it.groupValues[1] }.toList()
         assertEquals(phrases.map { it.phrase.replace("\"", "\\\"") }.sorted(), order)
+    }
+
+    @Test
+    fun testExportIsResourceContainer() = runTest {
+        val target = exportBackup(phrases, pendingPhrases)
+
+        ResourceContainer.load(File(target.toString())).use { rc ->
+            assertEquals("0.2", rc.conformsTo())
+            assertEquals("dict", rc.type())
+            with(rc.manifest.dublinCore) {
+                assertEquals("glossary", identifier)
+                assertEquals("text/yaml", format)
+                assertEquals("CC BY-SA 4.0", rights)
+                assertEquals("es", language.identifier)
+                assertEquals("Spanish", language.title)
+                assertEquals("ltr", language.direction)
+                assertEquals(listOf(Source("ulb", "en", "1")), source)
+                assertEquals(listOf("en/ulb"), relation)
+                assertEquals("3", version)
+                assertEquals("2024-01-01T00:00", issued)
+            }
+            assertEquals(listOf("glossary"), rc.projectIds())
+            assertEquals("./content", rc.project()?.path)
+            assertTrue(rc.accessor.fileExists("content/phrases.yaml"))
+            assertTrue(rc.accessor.fileExists("LICENSE.md"))
+        }
     }
 
     @Test
@@ -143,7 +181,7 @@ class GlossaryBackupRoundTripTest : BaseTest() {
         val description = "description ".repeat(40)
         val manyPhrases = (1..8000).map { phrase("phrase $it", description = description) }
         val target = exportBackup(manyPhrases, emptyList())
-        assertTrue(readEntry(target, "content.yml").length > 3 * 1024 * 1024)
+        assertTrue(readEntry(target, "es_glossary/content/phrases.yaml").length > 3 * 1024 * 1024)
 
         val imported = importBackup(target)
 

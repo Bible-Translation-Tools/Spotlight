@@ -1,5 +1,6 @@
 import { ReviewStatusType, RoleType } from "./db/schema";
 import { User } from "./user.types";
+import { Manifest } from "./resource.types";
 
 export interface Phrase {
   id: string;
@@ -17,18 +18,22 @@ export interface Resource {
   version: string;
 }
 
-export interface GlossaryManifest {
+/** manifest.yaml of a glossary backup: an RC manifest plus a `glossary` section. */
+export interface GlossaryManifest extends Manifest {
+  glossary: {
+    code: string;
+    id?: string | null;
+  };
+}
+
+export interface Glossary {
   id: string | null;
   code: string;
   sourceLanguage: string;
   targetLanguage: string;
-  version: number;
   createdAt: string;
   updatedAt: string;
   resource: Resource;
-}
-
-export interface Glossary extends Omit<GlossaryManifest, "version"> {
   phrases: Phrase[];
 }
 

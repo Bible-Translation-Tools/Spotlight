@@ -27,6 +27,7 @@ interface FileSystemProvider {
     suspend fun writeFile(bytes: ByteArray, path: Path)
     suspend fun writeFile(content: String, path: Path)
     fun exists(path: Path): Boolean
+    suspend fun createDirectories(path: Path)
 
     suspend fun deleteFile(file: Path)
     suspend fun deleteFile(fileName: String)
@@ -38,7 +39,7 @@ interface FileSystemProvider {
 
     suspend fun zipDirectory(source: Path, target: PlatformFile)
     suspend fun extractZip(file: PlatformFile, destDir: Path)
-    suspend fun readZipEntry(file: PlatformFile, entryName: String): String?
+    suspend fun readZipEntry(file: PlatformFile, predicate: (String) -> Boolean): Pair<String, String>?
 }
 
 class FileSystemProviderImpl : FileSystemProvider {
@@ -104,6 +105,10 @@ class FileSystemProviderImpl : FileSystemProvider {
 
     override fun exists(path: Path): Boolean {
         return SystemFileSystem.exists(path)
+    }
+
+    override suspend fun createDirectories(path: Path) {
+        SystemFileSystem.createDirectories(path)
     }
 
     override suspend fun deleteFile(file: Path) {
@@ -211,7 +216,10 @@ class FileSystemProviderImpl : FileSystemProvider {
         ZipUtils.extractZip(file, destDir)
     }
 
-    override suspend fun readZipEntry(file: PlatformFile, entryName: String): String? {
-        return ZipUtils.readEntry(file, entryName)
+    override suspend fun readZipEntry(
+        file: PlatformFile,
+        predicate: (String) -> Boolean
+    ): Pair<String, String>? {
+        return ZipUtils.readEntry(file, predicate)
     }
 }

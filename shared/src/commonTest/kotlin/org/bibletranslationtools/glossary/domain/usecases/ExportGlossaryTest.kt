@@ -68,6 +68,7 @@ class ExportGlossaryTest {
         coEvery { fileSystemProvider.zipDirectory(any(), any()) } returns Unit
         
         coEvery { fileSystemProvider.writeFile(any<String>(), any()) } returns Unit
+        coEvery { fileSystemProvider.createDirectories(any()) } returns Unit
         coEvery { fileSystemProvider.exists(any()) } returns true
 
         exportGlossary(glossary, targetFile)
@@ -144,6 +145,7 @@ class ExportGlossaryTest {
         every { fileSystemProvider.sources } returns Path("/sources")
         
         coEvery { fileSystemProvider.writeFile(any<String>(), any()) } returns Unit
+        coEvery { fileSystemProvider.createDirectories(any()) } returns Unit
         coEvery { fileSystemProvider.exists(resourceFile) } returns false
 
         try {
