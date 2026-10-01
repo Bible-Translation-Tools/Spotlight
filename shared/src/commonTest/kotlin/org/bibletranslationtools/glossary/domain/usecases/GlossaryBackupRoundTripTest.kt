@@ -114,7 +114,10 @@ class GlossaryBackupRoundTripTest : BaseTest() {
 
         val manifest = readEntry(target, "es_glossary/manifest.yaml")
         assertTrue(manifest.startsWith("dublin_core:\n"), manifest)
-        assertTrue(manifest.contains("glossary:\n  code: \"G1\"\n  id: \"remote-g1\""), manifest)
+        assertTrue(
+            manifest.contains("glossary:\n  format_version: 1\n  code: \"G1\"\n  id: \"remote-g1\""),
+            manifest
+        )
 
         val content = readEntry(target, "es_glossary/content/phrases.yaml")
         // Multi-line text as a literal block, long text not wrapped

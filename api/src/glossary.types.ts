@@ -21,6 +21,7 @@ export interface Resource {
 /** manifest.yaml of a glossary backup: an RC manifest plus a `glossary` section. */
 export interface GlossaryManifest extends Manifest {
   glossary: {
+    format_version: number;
     code: string;
     id?: string | null;
   };

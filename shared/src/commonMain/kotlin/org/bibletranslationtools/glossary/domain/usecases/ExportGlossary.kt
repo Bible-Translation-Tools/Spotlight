@@ -89,6 +89,7 @@ class ExportGlossary(
                 )
             ),
             glossary = ManifestGlossaryInfo(
+                formatVersion = GlossaryArchive.FORMAT_VERSION,
                 code = glossary.code,
                 id = glossary.remoteId
             )

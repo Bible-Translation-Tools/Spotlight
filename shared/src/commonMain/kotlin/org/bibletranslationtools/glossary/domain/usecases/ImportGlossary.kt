@@ -61,7 +61,9 @@ class ImportGlossary(
 
         val rootDir = GlossaryArchive.rootDirOf(manifestEntry)
             .let { if (it.isEmpty()) tempDir else Path(tempDir, it) }
-        val backup = readBackup(rootDir, manifestYaml)
+        val manifest = Utils.Yaml.readValue<ManifestGlossary>(manifestYaml)
+        checkFormat(manifest)
+        val backup = readBackup(rootDir, manifest)
         val glossaryDict = backup.manifest
         val source = glossaryDict.source
 
@@ -110,7 +112,22 @@ class ImportGlossary(
         )
     }
 
-    private suspend fun readBackup(rootDir: Path, manifest: String): Backup {
+    private fun checkFormat(manifest: ManifestGlossary) {
+        val formatVersion = manifest.glossary.formatVersion
+            ?: throw IllegalArgumentException("Glossary format version not found in ${GlossaryArchive.MANIFEST}")
+        if (formatVersion > GlossaryArchive.FORMAT_VERSION) {
+            throw IllegalArgumentException(
+                "Glossary format $formatVersion is newer than supported " +
+                        "${GlossaryArchive.FORMAT_VERSION}, update the app"
+            )
+        }
+        if (formatVersion < 1) {
+            throw IllegalArgumentException("Invalid glossary format version: $formatVersion")
+        }
+        // Migrations from older formats go here once FORMAT_VERSION > 1
+    }
+
+    private suspend fun readBackup(rootDir: Path, manifest: ManifestGlossary): Backup {
         val contentFile = "${GlossaryArchive.CONTENT_DIR}/${GlossaryArchive.PHRASES}"
         val phrases = readYaml(Path(rootDir, GlossaryArchive.CONTENT_DIR, GlossaryArchive.PHRASES))
             ?: throw IllegalArgumentException("$contentFile not found in zip file")
@@ -119,7 +136,7 @@ class ImportGlossary(
             ?: "[]"
 
         return Backup(
-            manifest = Utils.Yaml.readValue<ManifestGlossary>(manifest),
+            manifest = manifest,
             phrases = Utils.Yaml.readValue<List<ManifestPhrase>>(phrases),
             pendingPhrases = Utils.Yaml.readValue<List<ManifestPhrase>>(pendingPhrases)
         )

@@ -19,6 +19,8 @@ data class ManifestGlossary(
 )
 
 data class ManifestGlossaryInfo(
+    @JsonProperty("format_version")
+    val formatVersion: Int? = null,
     val code: String,
     val id: String? = null
 )

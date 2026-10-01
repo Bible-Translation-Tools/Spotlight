@@ -13,6 +13,7 @@ export const GLOSSARY_CONTENT = "content/phrases.yaml";
 export const GLOSSARY_IDENTIFIER = "glossary";
 export const GLOSSARY_SUBJECT = "Glossary";
 export const GLOSSARY_RIGHTS = "CC BY-SA 4.0";
+export const GLOSSARY_FORMAT_VERSION = 1;
 
 /** manifest.yaml at the zip root, or inside a single top-level RC directory. */
 export function isGlossaryManifestEntry(name: string): boolean {
@@ -64,6 +65,20 @@ export function readGlossaryArchive(
   const phrases = (parseYaml(decoder.decode(contentFile), {
     schema: FAILSAFE_SCHEMA,
   }) ?? []) as Phrase[];
+
+  // Failsafe schema reads it as a string
+  const formatVersion = Number(manifest.glossary?.format_version);
+  if (!Number.isInteger(formatVersion) || formatVersion < 1) {
+    throw new Error(
+      `Glossary format version missing or invalid in ${GLOSSARY_MANIFEST}.`,
+    );
+  }
+  if (formatVersion > GLOSSARY_FORMAT_VERSION) {
+    throw new Error(
+      `Glossary format ${formatVersion} is newer than supported ${GLOSSARY_FORMAT_VERSION}.`,
+    );
+  }
+  // Migrations from older formats go here once GLOSSARY_FORMAT_VERSION > 1
 
   const dublinCore = manifest.dublin_core;
   const source = dublinCore.source?.[0];
@@ -127,7 +142,11 @@ export function buildGlossaryArchive(
         categories: [],
       },
     ],
-    glossary: { code: glossary.code, id: glossary.id },
+    glossary: {
+      format_version: GLOSSARY_FORMAT_VERSION,
+      code: glossary.code,
+      id: glossary.id,
+    },
   };
 
   // Sorted, so the same glossary always produces the same file

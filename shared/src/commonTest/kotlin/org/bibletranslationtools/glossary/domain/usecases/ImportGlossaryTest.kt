@@ -141,6 +141,20 @@ class ImportGlossaryTest {
     }
 
     @Test
+    fun testImportFailureMissingFormatVersion() = runTest {
+        stubManifest("es_glossary/manifest.yaml", manifestYaml(formatVersion = ""))
+
+        assertImportFails("Glossary format version not found in manifest.yaml")
+    }
+
+    @Test
+    fun testImportFailureNewerFormatVersion() = runTest {
+        stubManifest("es_glossary/manifest.yaml", manifestYaml(formatVersion = "  format_version: 2"))
+
+        assertImportFails("Glossary format 2 is newer than supported 1, update the app")
+    }
+
+    @Test
     fun testImportFailureMissingContent() = runTest {
         stubManifest("es_glossary/manifest.yaml", manifestYaml())
         coEvery { fileSystemProvider.exists(Path(rootDir, "content/phrases.yaml")) } returns false
@@ -209,6 +223,7 @@ class ImportGlossaryTest {
 
     private fun manifestYaml(
         code: String = "G1",
+        formatVersion: String = "  format_version: 1",
         source: String = """
             |  source:
             |    - identifier: "ulb"
@@ -234,6 +249,7 @@ class ImportGlossaryTest {
         |    sort: 1
         |    path: "./content"
         |glossary:
+        |$formatVersion
         |  code: "$code"
         |  id: "remote-g1"
     """.trimMargin()

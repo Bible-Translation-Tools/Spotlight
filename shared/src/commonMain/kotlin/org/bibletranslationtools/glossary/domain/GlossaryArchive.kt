@@ -12,6 +12,8 @@ object GlossaryArchive {
     const val PHRASES = "phrases.yaml"
     const val PENDING = "pending_phrases.yaml"
 
+    const val FORMAT_VERSION = 1
+
     const val CONFORMS_TO = "rc0.2"
     const val TYPE = "dict"
     const val FORMAT = "text/yaml"
