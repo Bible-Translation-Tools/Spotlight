@@ -256,7 +256,7 @@ app.post("/private/api/glossary", async (c) => {
         }
       }
 
-      // Keyed by file name only: in the RC it sits under es_glossary/.apps/spotlight/source/
+      // Keyed by file name only: in the backup it sits under .apps/spotlight/source/
       const resourceKey = resourceZipFilename.split("/").pop()!;
       await c.env.R2_BUCKET.put(resourceKey, resourceZipFile, {
         httpMetadata: {

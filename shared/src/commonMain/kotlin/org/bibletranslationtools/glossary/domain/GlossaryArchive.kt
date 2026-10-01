@@ -4,7 +4,7 @@ import kotlinx.io.files.Path
 
 /**
  * A glossary backup is a zipped resource container (RC 0.2)
- * Paths below are relative to the RC directory and use '/', as in zip entries.
+ * All files sit at the zip root. Paths below use '/', as in zip entries.
  */
 object GlossaryArchive {
     const val MANIFEST = "manifest.yaml"
@@ -27,25 +27,7 @@ object GlossaryArchive {
     const val SUBJECT = "Glossary"
     const val RIGHTS = "CC BY-SA 4.0"
 
-    fun rootDirName(targetLanguage: String) = "${targetLanguage}_$IDENTIFIER"
-
-    /** manifest.yaml at the zip root, or inside a single top-level RC directory. */
-    fun isManifestEntry(entryName: String): Boolean {
-        return entryName == MANIFEST ||
-                entryName.count { it == '/' } == 1 && entryName.endsWith("/$MANIFEST")
-    }
-
-    /** RC directory of a manifest entry: "" at the zip root, otherwise e.g. "es_glossary". */
-    fun rootDirOf(manifestEntry: String): String {
-        return manifestEntry.removeSuffix(MANIFEST).removeSuffix("/")
-    }
-
-    /** Zip entry name of [path] inside the RC directory [rootDir]. */
-    fun entryName(rootDir: String, path: String): String {
-        return if (rootDir.isEmpty()) path else "$rootDir/$path"
-    }
-
-    /** File at [path] inside the extracted RC directory [rootDir]. */
+    /** File at [path] inside the extracted backup [rootDir]. */
     fun file(rootDir: Path, path: String): Path {
         return Path(rootDir, *path.split('/').toTypedArray())
     }

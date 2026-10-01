@@ -43,15 +43,9 @@ class ImportGlossary(
      * @throws ImportGlossaryException if [file] is in a format this app can't import
      */
     suspend fun findExisting(file: PlatformFile): Glossary? {
-        val (manifestEntry, manifestYaml) = fileSystemProvider.readZipEntry(
-            file,
-            GlossaryArchive::isManifestEntry
-        ) ?: return null
-        val glossaryEntry = GlossaryArchive.entryName(
-            GlossaryArchive.rootDirOf(manifestEntry),
-            GlossaryArchive.GLOSSARY
-        )
-        val (_, glossaryYaml) = fileSystemProvider.readZipEntry(file) { it == glossaryEntry }
+        val manifestYaml = fileSystemProvider.readZipEntry(file, GlossaryArchive.MANIFEST)
+            ?: return null
+        val glossaryYaml = fileSystemProvider.readZipEntry(file, GlossaryArchive.GLOSSARY)
             ?: return null
 
         val manifest = parseYaml<Manifest>(manifestYaml, GlossaryArchive.MANIFEST)
@@ -67,21 +61,14 @@ class ImportGlossary(
 
     suspend operator fun invoke(file: PlatformFile): Result {
 
-        val (manifestEntry, manifestYaml) = fileSystemProvider.readZipEntry(
-            file,
-            GlossaryArchive::isManifestEntry
-        ) ?: throw ImportGlossaryException.InvalidBackup("${GlossaryArchive.MANIFEST} not found in zip file")
-
         val tempDir = fileSystemProvider.createTempDir("glossary")
         fileSystemProvider.extractZip(file, tempDir)
 
-        val rootDir = GlossaryArchive.rootDirOf(manifestEntry)
-            .let { if (it.isEmpty()) tempDir else Path(tempDir, it) }
-        val backup = readBackup(rootDir, parseYaml<Manifest>(manifestYaml, GlossaryArchive.MANIFEST))
+        val backup = readBackup(tempDir)
         val source = backup.manifest.source
 
         val resourceId = "${source.language}_${source.identifier}"
-        val resourceFile = GlossaryArchive.file(rootDir, "${GlossaryArchive.SOURCE_DIR}/$resourceId.zip")
+        val resourceFile = GlossaryArchive.file(tempDir, "${GlossaryArchive.SOURCE_DIR}/$resourceId.zip")
 
         if (!fileSystemProvider.exists(resourceFile)) {
             throw ImportGlossaryException.SourceText("$resourceId.zip not found in zip file")
@@ -139,7 +126,9 @@ class ImportGlossary(
         // Migrations from older formats go here once FORMAT_VERSION > 1
     }
 
-    private suspend fun readBackup(rootDir: Path, manifest: Manifest): Backup {
+    private suspend fun readBackup(rootDir: Path): Backup {
+        val manifest = readYaml(rootDir, GlossaryArchive.MANIFEST)
+            ?: throw ImportGlossaryException.InvalidBackup("${GlossaryArchive.MANIFEST} not found in zip file")
         val glossary = readYaml(rootDir, GlossaryArchive.GLOSSARY)
             ?: throw ImportGlossaryException.InvalidBackup("${GlossaryArchive.GLOSSARY} not found in zip file")
         val manifestGlossary = parseYaml<ManifestGlossary>(glossary, GlossaryArchive.GLOSSARY)
@@ -151,7 +140,7 @@ class ImportGlossary(
         val pendingPhrases = readYaml(rootDir, GlossaryArchive.PENDING) ?: "[]"
 
         return Backup(
-            manifest = manifest,
+            manifest = parseYaml<Manifest>(manifest, GlossaryArchive.MANIFEST),
             glossary = manifestGlossary,
             phrases = parseYaml<List<ManifestPhrase>>(phrases, GlossaryArchive.PHRASES),
             pendingPhrases = parseYaml<List<ManifestPhrase>>(pendingPhrases, GlossaryArchive.PENDING)

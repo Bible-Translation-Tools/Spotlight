@@ -61,16 +61,15 @@ object ZipUtils {
         }
     }
 
-    /** Name and text of the first file entry whose name matches [predicate]. */
-    fun readEntry(file: PlatformFile, predicate: (String) -> Boolean): Pair<String, String>? {
+    fun readEntry(file: PlatformFile, entryName: String): String? {
         val source: Source = file.source().buffered()
         val zipInputStream = ZipInputStream(source.asInputStream())
 
         zipInputStream.use { zis ->
             var entry: ZipEntry? = zis.nextEntry
             while (entry != null) {
-                if (!entry.isDirectory && predicate(entry.name)) {
-                    return entry.name to zis.readBytes().decodeToString()
+                if (!entry.isDirectory && entry.name == entryName) {
+                    return zis.readBytes().decodeToString()
                 }
                 zis.closeEntry()
                 entry = zis.nextEntry

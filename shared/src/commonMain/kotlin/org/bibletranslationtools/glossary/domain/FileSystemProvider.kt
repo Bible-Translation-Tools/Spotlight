@@ -39,7 +39,7 @@ interface FileSystemProvider {
 
     suspend fun zipDirectory(source: Path, target: PlatformFile)
     suspend fun extractZip(file: PlatformFile, destDir: Path)
-    suspend fun readZipEntry(file: PlatformFile, predicate: (String) -> Boolean): Pair<String, String>?
+    suspend fun readZipEntry(file: PlatformFile, entryName: String): String?
 }
 
 class FileSystemProviderImpl : FileSystemProvider {
@@ -216,10 +216,7 @@ class FileSystemProviderImpl : FileSystemProvider {
         ZipUtils.extractZip(file, destDir)
     }
 
-    override suspend fun readZipEntry(
-        file: PlatformFile,
-        predicate: (String) -> Boolean
-    ): Pair<String, String>? {
-        return ZipUtils.readEntry(file, predicate)
+    override suspend fun readZipEntry(file: PlatformFile, entryName: String): String? {
+        return ZipUtils.readEntry(file, entryName)
     }
 }

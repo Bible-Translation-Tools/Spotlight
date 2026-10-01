@@ -30,8 +30,7 @@ class ExportGlossary(
         val phrases = glossaryRepository.getPhrases(glossary.id)
         val pendingPhrases = glossaryRepository.getPendingPhrases(glossary.id)
 
-        val tempDir = fileSystemProvider.createTempDir("glossary")
-        val rootDir = Path(tempDir, GlossaryArchive.rootDirName(glossary.targetLanguage.slug))
+        val rootDir = fileSystemProvider.createTempDir("glossary")
         val sourceDir = GlossaryArchive.file(rootDir, GlossaryArchive.SOURCE_DIR)
         fileSystemProvider.createDirectories(GlossaryArchive.file(rootDir, GlossaryArchive.CONTENT_DIR))
         fileSystemProvider.createDirectories(sourceDir)
@@ -57,7 +56,7 @@ class ExportGlossary(
         }
         fileSystemProvider.copyFileToDir(resourceFile, sourceDir)
 
-        fileSystemProvider.zipDirectory(tempDir, target)
+        fileSystemProvider.zipDirectory(rootDir, target)
     }
 
     private fun manifest(glossary: Glossary, resource: Resource): Manifest {

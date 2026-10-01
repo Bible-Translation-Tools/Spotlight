@@ -14,14 +14,6 @@ export const GLOSSARY_SUBJECT = "Glossary";
 export const GLOSSARY_RIGHTS = "CC BY-SA 4.0";
 export const GLOSSARY_FORMAT_VERSION = 1;
 
-/** manifest.yaml at the zip root, or inside a single top-level RC directory. */
-export function isGlossaryManifestEntry(name: string): boolean {
-  return (
-    name === GLOSSARY_MANIFEST ||
-    (name.split("/").length === 2 && name.endsWith(`/${GLOSSARY_MANIFEST}`))
-  );
-}
-
 /** A glossary as loaded from the database, with its phrases and resource. */
 export interface StoredGlossary {
   id: string;
@@ -48,20 +40,17 @@ const encoder = new TextEncoder();
 export function readGlossaryArchive(
   archive: Record<string, Uint8Array>,
 ): Glossary | null {
-  // The RC sits in a top-level directory (es_glossary/) or at the zip root
-  const manifestPath = Object.keys(archive).find(isGlossaryManifestEntry);
-  if (!manifestPath) return null;
-
-  const root = manifestPath.slice(0, -GLOSSARY_MANIFEST.length);
-  const infoFile = archive[`${root}${GLOSSARY_INFO}`];
-  const contentFile = archive[`${root}${GLOSSARY_CONTENT}`];
-  if (!infoFile || !contentFile) return null;
+  // All files sit at the zip root
+  const manifestFile = archive[GLOSSARY_MANIFEST];
+  const infoFile = archive[GLOSSARY_INFO];
+  const contentFile = archive[GLOSSARY_CONTENT];
+  if (!manifestFile || !infoFile || !contentFile) return null;
 
   // Failsafe schema reads every value as a string, so a phrase like
   // "no" or "123" can't turn into a boolean or number
   const parse = (file: Uint8Array) =>
     parseYaml(decoder.decode(file), { schema: FAILSAFE_SCHEMA });
-  const manifest = parse(archive[manifestPath]) as Manifest;
+  const manifest = parse(manifestFile) as Manifest;
   const info = parse(infoFile) as GlossaryInfo;
 
   // Failsafe schema reads it as a string
@@ -158,20 +147,16 @@ export function buildGlossaryArchive(
     }))
     .sort((a, b) => (a.phrase < b.phrase ? -1 : a.phrase > b.phrase ? 1 : 0));
 
-  // RC zips hold a single top-level directory; its explicit entry is what
-  // kotlin-resource-container looks for.
   // lineWidth -1 keeps long descriptions on one line instead of folding them
-  const root = `${glossary.targetLanguage}_${GLOSSARY_IDENTIFIER}/`;
   return {
-    [root]: new Uint8Array(),
-    [`${root}${GLOSSARY_MANIFEST}`]: encoder.encode(
+    [GLOSSARY_MANIFEST]: encoder.encode(
       dumpYaml(manifest, { lineWidth: -1 }),
     ),
-    [`${root}${GLOSSARY_LICENSE}`]: encoder.encode(GLOSSARY_LICENSE_TEXT),
-    [`${root}${GLOSSARY_CONTENT}`]: encoder.encode(
+    [GLOSSARY_LICENSE]: encoder.encode(GLOSSARY_LICENSE_TEXT),
+    [GLOSSARY_CONTENT]: encoder.encode(
       dumpYaml(phrases, { lineWidth: -1 }),
     ),
-    [`${root}${GLOSSARY_INFO}`]: encoder.encode(dumpYaml(info)),
-    [`${root}${GLOSSARY_SOURCE_DIR}/${resourceFilename}`]: resourceBytes,
+    [GLOSSARY_INFO]: encoder.encode(dumpYaml(info)),
+    [`${GLOSSARY_SOURCE_DIR}/${resourceFilename}`]: resourceBytes,
   };
 }

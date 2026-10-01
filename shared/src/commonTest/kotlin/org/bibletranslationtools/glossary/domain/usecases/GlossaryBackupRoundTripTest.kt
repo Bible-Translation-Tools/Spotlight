@@ -99,31 +99,31 @@ class GlossaryBackupRoundTripTest : BaseTest() {
         }
         assertEquals(
             setOf(
-                "es_glossary/manifest.yaml",
-                "es_glossary/LICENSE.md",
-                "es_glossary/content/phrases.yaml",
-                "es_glossary/.apps/spotlight/glossary.yaml",
-                "es_glossary/.apps/spotlight/pending_phrases.yaml",
-                "es_glossary/.apps/spotlight/source/en_ulb.zip"
+                "manifest.yaml",
+                "LICENSE.md",
+                "content/phrases.yaml",
+                ".apps/spotlight/glossary.yaml",
+                ".apps/spotlight/pending_phrases.yaml",
+                ".apps/spotlight/source/en_ulb.zip"
             ),
             entries
         )
 
         assertEquals(
             Res.readBytes(GlossaryArchive.LICENSE_ASSET).decodeToString(),
-            readEntry(target, "es_glossary/LICENSE.md")
+            readEntry(target, "LICENSE.md")
         )
 
         // A plain RC manifest: everything app-specific is in .apps/spotlight
-        val manifest = readEntry(target, "es_glossary/manifest.yaml")
+        val manifest = readEntry(target, "manifest.yaml")
         assertTrue(manifest.startsWith("dublin_core:\n"), manifest)
         assertFalse(manifest.contains("glossary:"), manifest)
         assertEquals(
             "format_version: 1\ncode: \"G1\"\nid: \"remote-g1\"\n",
-            readEntry(target, "es_glossary/.apps/spotlight/glossary.yaml")
+            readEntry(target, ".apps/spotlight/glossary.yaml")
         )
 
-        val content = readEntry(target, "es_glossary/content/phrases.yaml")
+        val content = readEntry(target, "content/phrases.yaml")
         // Multi-line text as a literal block, long text not wrapped
         assertTrue(content.contains("description: |\n    line 1\n    line 2\n"), content)
         assertTrue(content.lines().any { it.endsWith("\"$longDescription\"") }, content)
@@ -195,7 +195,7 @@ class GlossaryBackupRoundTripTest : BaseTest() {
         val description = "description ".repeat(40)
         val manyPhrases = (1..8000).map { phrase("phrase $it", description = description) }
         val target = exportBackup(manyPhrases, emptyList())
-        assertTrue(readEntry(target, "es_glossary/content/phrases.yaml").length > 3 * 1024 * 1024)
+        assertTrue(readEntry(target, "content/phrases.yaml").length > 3 * 1024 * 1024)
 
         val imported = importBackup(target)
 
