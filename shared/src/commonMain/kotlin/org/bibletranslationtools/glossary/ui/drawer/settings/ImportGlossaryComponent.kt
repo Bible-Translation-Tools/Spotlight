@@ -144,14 +144,14 @@ class DefaultImportGlossaryComponent(
 
                 val code = model.value.otpCode.joinToString("")
 
-                val result: ImportGlossary.Result? = withContext(Dispatchers.IO) {
+                val file: PlatformFile? = withContext(Dispatchers.IO) {
                     val result = glossaryApi.downloadGlossary(code)
                     if (result is NetworkResult.Success) {
                         val target = fileSystemProvider.createTempFile("download", ".zip")
                         fileSystemProvider.writeFile(result.data, target)
 
                         if (fileSystemProvider.exists(target)) {
-                            importGlossaryUseCase(PlatformFile(target))
+                            PlatformFile(target)
                         } else null
                     } else {
                         _model.update { it.copy(error = result.toString()) }
@@ -160,11 +160,7 @@ class DefaultImportGlossaryComponent(
                     }
                 }
 
-                result?.let {
-                    onSelectResource(it.resource)
-                    onSelectGlossary(it.glossary, true)
-                    onImportFinished()
-                }
+                file?.let { importOrConfirmOverwrite(it) }
 
                 _model.update { it.copy(progress = null) }
             }
@@ -172,23 +168,7 @@ class DefaultImportGlossaryComponent(
     }
 
     override fun onImportClicked(file: PlatformFile) {
-        componentScope.launch {
-            val existing = withContext(Dispatchers.Default) {
-                try {
-                    importGlossaryUseCase.findExisting(file)
-                } catch (e: Exception) {
-                    this@DefaultImportGlossaryComponent.logE("Failed to check existing glossary", e)
-                    null
-                }
-            }
-
-            if (existing != null) {
-                pendingImportFile = file
-                _model.update { it.copy(overwriteRequest = existing) }
-            } else {
-                importFile(file)
-            }
-        }
+        componentScope.launch { importOrConfirmOverwrite(file) }
     }
 
     override fun onOverwriteConfirmed() {
@@ -201,6 +181,24 @@ class DefaultImportGlossaryComponent(
     override fun onOverwriteDismissed() {
         pendingImportFile = null
         _model.update { it.copy(overwriteRequest = null) }
+    }
+
+    private suspend fun importOrConfirmOverwrite(file: PlatformFile) {
+        val existing = withContext(Dispatchers.Default) {
+            try {
+                importGlossaryUseCase.findExisting(file)
+            } catch (e: Exception) {
+                this@DefaultImportGlossaryComponent.logE("Failed to check existing glossary", e)
+                null
+            }
+        }
+
+        if (existing != null) {
+            pendingImportFile = file
+            _model.update { it.copy(overwriteRequest = existing) }
+        } else {
+            importFile(file)
+        }
     }
 
     private suspend fun importFile(file: PlatformFile) {
