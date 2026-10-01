@@ -1,15 +1,14 @@
 import { dump as dumpYaml, FAILSAFE_SCHEMA, load as parseYaml } from "js-yaml";
-import {
-  Glossary,
-  GlossaryManifest,
-  Phrase,
-  Resource,
-} from "./glossary.types";
+import { Glossary, GlossaryInfo, Phrase, Resource } from "./glossary.types";
+import { Manifest } from "./resource.types";
 import GLOSSARY_LICENSE_TEXT from "./assets/LICENSE.md";
 
 export const GLOSSARY_MANIFEST = "manifest.yaml";
 export const GLOSSARY_LICENSE = "LICENSE.md";
 export const GLOSSARY_CONTENT = "content/phrases.yaml";
+export const GLOSSARY_APP_DIR = ".apps/spotlight";
+export const GLOSSARY_INFO = `${GLOSSARY_APP_DIR}/glossary.yaml`;
+export const GLOSSARY_SOURCE_DIR = `${GLOSSARY_APP_DIR}/source`;
 export const GLOSSARY_IDENTIFIER = "glossary";
 export const GLOSSARY_SUBJECT = "Glossary";
 export const GLOSSARY_RIGHTS = "CC BY-SA 4.0";
@@ -54,23 +53,22 @@ export function readGlossaryArchive(
   if (!manifestPath) return null;
 
   const root = manifestPath.slice(0, -GLOSSARY_MANIFEST.length);
+  const infoFile = archive[`${root}${GLOSSARY_INFO}`];
   const contentFile = archive[`${root}${GLOSSARY_CONTENT}`];
-  if (!contentFile) return null;
+  if (!infoFile || !contentFile) return null;
 
   // Failsafe schema reads every value as a string, so a phrase like
   // "no" or "123" can't turn into a boolean or number
-  const manifest = parseYaml(decoder.decode(archive[manifestPath]), {
-    schema: FAILSAFE_SCHEMA,
-  }) as GlossaryManifest;
-  const phrases = (parseYaml(decoder.decode(contentFile), {
-    schema: FAILSAFE_SCHEMA,
-  }) ?? []) as Phrase[];
+  const parse = (file: Uint8Array) =>
+    parseYaml(decoder.decode(file), { schema: FAILSAFE_SCHEMA });
+  const manifest = parse(archive[manifestPath]) as Manifest;
+  const info = parse(infoFile) as GlossaryInfo;
 
   // Failsafe schema reads it as a string
-  const formatVersion = Number(manifest.glossary?.format_version);
+  const formatVersion = Number(info?.format_version);
   if (!Number.isInteger(formatVersion) || formatVersion < 1) {
     throw new Error(
-      `Glossary format version missing or invalid in ${GLOSSARY_MANIFEST}.`,
+      `Glossary format version missing or invalid in ${GLOSSARY_INFO}.`,
     );
   }
   if (formatVersion > GLOSSARY_FORMAT_VERSION) {
@@ -80,6 +78,8 @@ export function readGlossaryArchive(
   }
   // Migrations from older formats go here once GLOSSARY_FORMAT_VERSION > 1
 
+  const phrases = (parse(contentFile) ?? []) as Phrase[];
+
   const dublinCore = manifest.dublin_core;
   const source = dublinCore.source?.[0];
   if (!source) {
@@ -87,8 +87,8 @@ export function readGlossaryArchive(
   }
 
   return {
-    id: manifest.glossary.id ?? null,
-    code: manifest.glossary.code,
+    id: info.id ?? null,
+    code: info.code,
     // The source text is always in the glossary's source language
     sourceLanguage: source.language,
     targetLanguage: dublinCore.language.identifier,
@@ -110,7 +110,7 @@ export function buildGlossaryArchive(
   resourceBytes: Uint8Array,
 ): Record<string, Uint8Array> {
   const { language, type, version } = glossary.resource;
-  const manifest: GlossaryManifest = {
+  const manifest: Manifest = {
     dublin_core: {
       conformsto: "rc0.2",
       type: "dict",
@@ -142,11 +142,11 @@ export function buildGlossaryArchive(
         categories: [],
       },
     ],
-    glossary: {
-      format_version: GLOSSARY_FORMAT_VERSION,
-      code: glossary.code,
-      id: glossary.id,
-    },
+  };
+  const info: GlossaryInfo = {
+    format_version: GLOSSARY_FORMAT_VERSION,
+    code: glossary.code,
+    id: glossary.id,
   };
 
   // Sorted, so the same glossary always produces the same file
@@ -171,6 +171,7 @@ export function buildGlossaryArchive(
     [`${root}${GLOSSARY_CONTENT}`]: encoder.encode(
       dumpYaml(phrases, { lineWidth: -1 }),
     ),
-    [`${root}${resourceFilename}`]: resourceBytes,
+    [`${root}${GLOSSARY_INFO}`]: encoder.encode(dumpYaml(info)),
+    [`${root}${GLOSSARY_SOURCE_DIR}/${resourceFilename}`]: resourceBytes,
   };
 }

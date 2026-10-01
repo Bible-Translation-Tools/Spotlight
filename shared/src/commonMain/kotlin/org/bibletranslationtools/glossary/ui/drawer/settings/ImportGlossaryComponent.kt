@@ -18,6 +18,7 @@ import org.bibletranslationtools.glossary.domain.FileSystemProvider
 import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.NetworkResult
 import org.bibletranslationtools.glossary.domain.usecases.ImportGlossary
+import org.bibletranslationtools.glossary.domain.usecases.ImportGlossaryException
 import org.bibletranslationtools.glossary.logE
 import org.bibletranslationtools.glossary.ui.components.OtpAction
 import org.bibletranslationtools.glossary.ui.drawer.DrawerComponent
@@ -27,6 +28,11 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import spotlight.shared.generated.resources.Res
 import spotlight.shared.generated.resources.downloading_glossary
+import spotlight.shared.generated.resources.import_glossary_error
+import spotlight.shared.generated.resources.import_glossary_error_invalid
+import spotlight.shared.generated.resources.import_glossary_error_language
+import spotlight.shared.generated.resources.import_glossary_error_newer_format
+import spotlight.shared.generated.resources.import_glossary_error_source_text
 import spotlight.shared.generated.resources.importing_glossary
 
 interface ImportGlossaryComponent : DrawerContext {
@@ -184,13 +190,18 @@ class DefaultImportGlossaryComponent(
     }
 
     private suspend fun importOrConfirmOverwrite(file: PlatformFile) {
-        val existing = withContext(Dispatchers.Default) {
-            try {
+        _model.update { it.copy(error = null) }
+
+        val existing = try {
+            withContext(Dispatchers.Default) {
                 importGlossaryUseCase.findExisting(file)
-            } catch (e: Exception) {
-                this@DefaultImportGlossaryComponent.logE("Failed to check existing glossary", e)
-                null
             }
+        } catch (e: Exception) {
+            // Importing would fail the same way, e.g. a backup from a newer app version
+            this.logE("Failed to check existing glossary", e)
+            val error = importErrorMessage(e)
+            _model.update { it.copy(error = error) }
+            return
         }
 
         if (existing != null) {
@@ -208,8 +219,15 @@ class DefaultImportGlossaryComponent(
         )
         _model.update { it.copy(progress = progress) }
 
-        val result = withContext(Dispatchers.Default) {
-            importGlossaryUseCase(file)
+        val result = try {
+            withContext(Dispatchers.Default) {
+                importGlossaryUseCase(file)
+            }
+        } catch (e: Exception) {
+            this.logE("Failed to import glossary", e)
+            val error = importErrorMessage(e)
+            _model.update { it.copy(progress = null, error = error) }
+            return
         }
 
         onSelectResource(result.resource)
@@ -218,5 +236,19 @@ class DefaultImportGlossaryComponent(
         _model.update { it.copy(progress = null) }
 
         onImportFinished()
+    }
+
+    private suspend fun importErrorMessage(e: Exception): String {
+        return when (e) {
+            is ImportGlossaryException.InvalidBackup ->
+                getString(Res.string.import_glossary_error_invalid)
+            is ImportGlossaryException.NewerFormat ->
+                getString(Res.string.import_glossary_error_newer_format)
+            is ImportGlossaryException.SourceText ->
+                getString(Res.string.import_glossary_error_source_text)
+            is ImportGlossaryException.UnknownLanguage ->
+                getString(Res.string.import_glossary_error_language, e.language)
+            else -> getString(Res.string.import_glossary_error)
+        }
     }
 }

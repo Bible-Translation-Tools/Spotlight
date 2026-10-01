@@ -26,6 +26,7 @@ import java.util.zip.ZipFile
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GlossaryBackupRoundTripTest : BaseTest() {
@@ -101,8 +102,9 @@ class GlossaryBackupRoundTripTest : BaseTest() {
                 "es_glossary/manifest.yaml",
                 "es_glossary/LICENSE.md",
                 "es_glossary/content/phrases.yaml",
-                "es_glossary/content/pending_phrases.yaml",
-                "es_glossary/en_ulb.zip"
+                "es_glossary/.apps/spotlight/glossary.yaml",
+                "es_glossary/.apps/spotlight/pending_phrases.yaml",
+                "es_glossary/.apps/spotlight/source/en_ulb.zip"
             ),
             entries
         )
@@ -112,11 +114,13 @@ class GlossaryBackupRoundTripTest : BaseTest() {
             readEntry(target, "es_glossary/LICENSE.md")
         )
 
+        // A plain RC manifest: everything app-specific is in .apps/spotlight
         val manifest = readEntry(target, "es_glossary/manifest.yaml")
         assertTrue(manifest.startsWith("dublin_core:\n"), manifest)
-        assertTrue(
-            manifest.contains("glossary:\n  format_version: 1\n  code: \"G1\"\n  id: \"remote-g1\""),
-            manifest
+        assertFalse(manifest.contains("glossary:"), manifest)
+        assertEquals(
+            "format_version: 1\ncode: \"G1\"\nid: \"remote-g1\"\n",
+            readEntry(target, "es_glossary/.apps/spotlight/glossary.yaml")
         )
 
         val content = readEntry(target, "es_glossary/content/phrases.yaml")

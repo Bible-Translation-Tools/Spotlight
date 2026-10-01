@@ -1,5 +1,6 @@
 package org.bibletranslationtools.glossary.domain.usecases
 
+import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.io.files.Path
@@ -15,6 +16,7 @@ import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.logE
 import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import org.bibletranslationtools.glossary.toLocalDateTime
+import org.wycliffeassociates.resourcecontainer.entity.Manifest
 import org.wycliffeassociates.resourcecontainer.entity.Source
 
 class ImportGlossary(
@@ -28,7 +30,8 @@ class ImportGlossary(
     )
 
     private data class Backup(
-        val manifest: ManifestGlossary,
+        val manifest: Manifest,
+        val glossary: ManifestGlossary,
         val phrases: List<ManifestPhrase>,
         val pendingPhrases: List<ManifestPhrase>
     )
@@ -36,14 +39,27 @@ class ImportGlossary(
     /**
      * Returns the glossary already stored on the device that importing
      * [file] would overwrite, or null if there is none.
+     *
+     * @throws ImportGlossaryException if [file] is in a format this app can't import
      */
     suspend fun findExisting(file: PlatformFile): Glossary? {
-        val (_, yaml) = fileSystemProvider.readZipEntry(file, GlossaryArchive::isManifestEntry)
+        val (manifestEntry, manifestYaml) = fileSystemProvider.readZipEntry(
+            file,
+            GlossaryArchive::isManifestEntry
+        ) ?: return null
+        val glossaryEntry = GlossaryArchive.entryName(
+            GlossaryArchive.rootDirOf(manifestEntry),
+            GlossaryArchive.GLOSSARY
+        )
+        val (_, glossaryYaml) = fileSystemProvider.readZipEntry(file) { it == glossaryEntry }
             ?: return null
-        val manifest = Utils.Yaml.readValue<ManifestGlossary>(yaml)
+
+        val manifest = parseYaml<Manifest>(manifestYaml, GlossaryArchive.MANIFEST)
+        val manifestGlossary = parseYaml<ManifestGlossary>(glossaryYaml, GlossaryArchive.GLOSSARY)
+        checkFormat(manifestGlossary)
 
         return glossaryRepository.getGlossaries().firstOrNull {
-            it.code == manifest.glossary.code &&
+            it.code == manifestGlossary.code &&
                     it.sourceLanguage.slug == manifest.source.language &&
                     it.targetLanguage.slug == manifest.dublinCore.language.identifier
         }
@@ -54,24 +70,21 @@ class ImportGlossary(
         val (manifestEntry, manifestYaml) = fileSystemProvider.readZipEntry(
             file,
             GlossaryArchive::isManifestEntry
-        ) ?: throw IllegalArgumentException("${GlossaryArchive.MANIFEST} not found in zip file")
+        ) ?: throw ImportGlossaryException.InvalidBackup("${GlossaryArchive.MANIFEST} not found in zip file")
 
         val tempDir = fileSystemProvider.createTempDir("glossary")
         fileSystemProvider.extractZip(file, tempDir)
 
         val rootDir = GlossaryArchive.rootDirOf(manifestEntry)
             .let { if (it.isEmpty()) tempDir else Path(tempDir, it) }
-        val manifest = Utils.Yaml.readValue<ManifestGlossary>(manifestYaml)
-        checkFormat(manifest)
-        val backup = readBackup(rootDir, manifest)
-        val glossaryDict = backup.manifest
-        val source = glossaryDict.source
+        val backup = readBackup(rootDir, parseYaml<Manifest>(manifestYaml, GlossaryArchive.MANIFEST))
+        val source = backup.manifest.source
 
         val resourceId = "${source.language}_${source.identifier}"
-        val resourceFile = Path(rootDir, "$resourceId.zip")
+        val resourceFile = GlossaryArchive.file(rootDir, "${GlossaryArchive.SOURCE_DIR}/$resourceId.zip")
 
         if (!fileSystemProvider.exists(resourceFile)) {
-            throw IllegalArgumentException("$resourceId.zip not found in zip file")
+            throw ImportGlossaryException.SourceText("$resourceId.zip not found in zip file")
         }
 
         val resource = resourceContainerAccessor.read(resourceFile)?.let { resource ->
@@ -80,14 +93,14 @@ class ImportGlossary(
             } catch (e: Exception) {
                 this.logE("Failed to add resource: ${resource.id}", e)
             }
-            val dbResource = glossaryRepository.getResource(source.language, source.identifier) ?: throw IllegalArgumentException("Failed to register resource")
-            
+            val dbResource = glossaryRepository.getResource(source.language, source.identifier) ?: throw ImportGlossaryException.SourceText("Failed to register resource")
+
             resource.copy(id = dbResource.id, url = dbResource.url)
-        } ?: throw IllegalArgumentException("Resource is corrupted")
+        } ?: throw ImportGlossaryException.SourceText("Resource is corrupted")
 
         fileSystemProvider.saveSource(resourceFile, "$resourceId.zip")
 
-        val glossary = mapGlossary(glossaryDict, resource)
+        val glossary = mapGlossary(backup, resource)
         val glossaryId = glossaryRepository.addGlossary(glossary)
 
         val phrasesToInsert = mutableListOf<Phrase>()
@@ -112,76 +125,95 @@ class ImportGlossary(
         )
     }
 
-    private fun checkFormat(manifest: ManifestGlossary) {
-        val formatVersion = manifest.glossary.formatVersion
-            ?: throw IllegalArgumentException("Glossary format version not found in ${GlossaryArchive.MANIFEST}")
-        if (formatVersion > GlossaryArchive.FORMAT_VERSION) {
-            throw IllegalArgumentException(
-                "Glossary format $formatVersion is newer than supported " +
-                        "${GlossaryArchive.FORMAT_VERSION}, update the app"
+    private fun checkFormat(glossary: ManifestGlossary) {
+        val formatVersion = glossary.formatVersion
+            ?: throw ImportGlossaryException.InvalidBackup(
+                "Glossary format version not found in ${GlossaryArchive.GLOSSARY}"
             )
+        if (formatVersion > GlossaryArchive.FORMAT_VERSION) {
+            throw ImportGlossaryException.NewerFormat(formatVersion, GlossaryArchive.FORMAT_VERSION)
         }
         if (formatVersion < 1) {
-            throw IllegalArgumentException("Invalid glossary format version: $formatVersion")
+            throw ImportGlossaryException.InvalidBackup("Invalid glossary format version: $formatVersion")
         }
         // Migrations from older formats go here once FORMAT_VERSION > 1
     }
 
-    private suspend fun readBackup(rootDir: Path, manifest: ManifestGlossary): Backup {
-        val contentFile = "${GlossaryArchive.CONTENT_DIR}/${GlossaryArchive.PHRASES}"
-        val phrases = readYaml(Path(rootDir, GlossaryArchive.CONTENT_DIR, GlossaryArchive.PHRASES))
-            ?: throw IllegalArgumentException("$contentFile not found in zip file")
+    private suspend fun readBackup(rootDir: Path, manifest: Manifest): Backup {
+        val glossary = readYaml(rootDir, GlossaryArchive.GLOSSARY)
+            ?: throw ImportGlossaryException.InvalidBackup("${GlossaryArchive.GLOSSARY} not found in zip file")
+        val manifestGlossary = parseYaml<ManifestGlossary>(glossary, GlossaryArchive.GLOSSARY)
+        checkFormat(manifestGlossary)
+
+        val phrases = readYaml(rootDir, GlossaryArchive.PHRASES)
+            ?: throw ImportGlossaryException.InvalidBackup("${GlossaryArchive.PHRASES} not found in zip file")
         // Server downloads carry no pending phrases
-        val pendingPhrases = readYaml(Path(rootDir, GlossaryArchive.CONTENT_DIR, GlossaryArchive.PENDING))
-            ?: "[]"
+        val pendingPhrases = readYaml(rootDir, GlossaryArchive.PENDING) ?: "[]"
 
         return Backup(
             manifest = manifest,
-            phrases = Utils.Yaml.readValue<List<ManifestPhrase>>(phrases),
-            pendingPhrases = Utils.Yaml.readValue<List<ManifestPhrase>>(pendingPhrases)
+            glossary = manifestGlossary,
+            phrases = parseYaml<List<ManifestPhrase>>(phrases, GlossaryArchive.PHRASES),
+            pendingPhrases = parseYaml<List<ManifestPhrase>>(pendingPhrases, GlossaryArchive.PENDING)
         )
     }
 
-    private suspend fun readYaml(file: Path): String? {
+    private inline fun <reified T> parseYaml(yaml: String, path: String): T {
+        return try {
+            Utils.Yaml.readValue<T>(yaml)
+        } catch (e: JacksonException) {
+            throw ImportGlossaryException.InvalidBackup("Invalid $path", e)
+        }
+    }
+
+    private suspend fun readYaml(rootDir: Path, path: String): String? {
+        val file = GlossaryArchive.file(rootDir, path)
         if (!fileSystemProvider.exists(file)) return null
         return fileSystemProvider.readFile(file)
-            ?: throw IllegalArgumentException("Failed to read ${file.name}")
+            ?: throw ImportGlossaryException.InvalidBackup("Failed to read $path")
     }
 
     private suspend fun mapGlossary(
-        glossary: ManifestGlossary,
+        backup: Backup,
         resource: Resource
     ): Glossary {
-        val sourceLanguage = glossaryRepository.getLanguage(glossary.source.language)
-        val targetLanguage = glossaryRepository.getLanguage(glossary.dublinCore.language.identifier)
+        val dublinCore = backup.manifest.dublinCore
+        val sourceLanguage = glossaryRepository.getLanguage(backup.manifest.source.language)
+        val targetLanguage = glossaryRepository.getLanguage(dublinCore.language.identifier)
 
         if (sourceLanguage == null) {
-            throw IllegalArgumentException("Source language not found in database")
+            throw ImportGlossaryException.UnknownLanguage(
+                backup.manifest.source.language,
+                "Source language not found in database"
+            )
         }
 
         if (targetLanguage == null) {
-            throw IllegalArgumentException("Target language not found in database")
+            throw ImportGlossaryException.UnknownLanguage(
+                dublinCore.language.identifier,
+                "Target language not found in database"
+            )
         }
 
-        val version = glossary.dublinCore.version.toIntOrNull()
-            ?: throw IllegalArgumentException("Invalid glossary version: ${glossary.dublinCore.version}")
+        val version = dublinCore.version.toIntOrNull()
+            ?: throw ImportGlossaryException.InvalidBackup("Invalid glossary version: ${dublinCore.version}")
 
         return Glossary(
-            code = glossary.glossary.code,
+            code = backup.glossary.code,
             sourceLanguage = sourceLanguage,
             targetLanguage = targetLanguage,
             version = version,
             resourceId = resource.id,
-            createdAt = glossary.dublinCore.issued.toLocalDateTime(),
-            updatedAt = glossary.dublinCore.modified.toLocalDateTime(),
-            remoteId = glossary.glossary.id
+            createdAt = dublinCore.issued.toLocalDateTime(),
+            updatedAt = dublinCore.modified.toLocalDateTime(),
+            remoteId = backup.glossary.id
         )
     }
 
     /** Source text the glossary is built on; the glossary's source language is its language. */
-    private val ManifestGlossary.source: Source
+    private val Manifest.source: Source
         get() = dublinCore.source.firstOrNull()
-            ?: throw IllegalArgumentException("Source text not found in ${GlossaryArchive.MANIFEST}")
+            ?: throw ImportGlossaryException.InvalidBackup("Source text not found in ${GlossaryArchive.MANIFEST}")
 
     private fun mapPhrase(phrase: ManifestPhrase, glossaryId: String): Phrase {
         return Phrase(

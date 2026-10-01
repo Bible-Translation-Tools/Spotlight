@@ -8,13 +8,14 @@ import org.bibletranslationtools.glossary.data.Glossary
 import org.bibletranslationtools.glossary.data.Phrase
 import org.bibletranslationtools.glossary.data.Resource
 import org.bibletranslationtools.glossary.data.api.ManifestGlossary
-import org.bibletranslationtools.glossary.data.api.ManifestGlossaryInfo
 import org.bibletranslationtools.glossary.data.api.ManifestPhrase
 import org.bibletranslationtools.glossary.domain.FileSystemProvider
 import org.bibletranslationtools.glossary.domain.GlossaryArchive
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
+import org.wycliffeassociates.resourcecontainer.entity.Checking
 import org.wycliffeassociates.resourcecontainer.entity.DublinCore
 import org.wycliffeassociates.resourcecontainer.entity.Language
+import org.wycliffeassociates.resourcecontainer.entity.Manifest
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import org.wycliffeassociates.resourcecontainer.entity.Source
 import spotlight.shared.generated.resources.Res
@@ -31,29 +32,37 @@ class ExportGlossary(
 
         val tempDir = fileSystemProvider.createTempDir("glossary")
         val rootDir = Path(tempDir, GlossaryArchive.rootDirName(glossary.targetLanguage.slug))
-        val contentDir = Path(rootDir, GlossaryArchive.CONTENT_DIR)
-        fileSystemProvider.createDirectories(contentDir)
+        val sourceDir = GlossaryArchive.file(rootDir, GlossaryArchive.SOURCE_DIR)
+        fileSystemProvider.createDirectories(GlossaryArchive.file(rootDir, GlossaryArchive.CONTENT_DIR))
+        fileSystemProvider.createDirectories(sourceDir)
 
-        writeYaml(manifest(glossary, resource), Path(rootDir, GlossaryArchive.MANIFEST))
+        writeYaml(manifest(glossary, resource), GlossaryArchive.file(rootDir, GlossaryArchive.MANIFEST))
         fileSystemProvider.writeFile(
             Res.readBytes(GlossaryArchive.LICENSE_ASSET),
-            Path(rootDir, GlossaryArchive.LICENSE)
+            GlossaryArchive.file(rootDir, GlossaryArchive.LICENSE)
         )
-        writeYaml(phrases.toManifest(), Path(contentDir, GlossaryArchive.PHRASES))
-        writeYaml(pendingPhrases.toManifest(), Path(contentDir, GlossaryArchive.PENDING))
+        writeYaml(phrases.toManifest(), GlossaryArchive.file(rootDir, GlossaryArchive.PHRASES))
+
+        val manifestGlossary = ManifestGlossary(
+            formatVersion = GlossaryArchive.FORMAT_VERSION,
+            code = glossary.code,
+            id = glossary.remoteId
+        )
+        writeYaml(manifestGlossary, GlossaryArchive.file(rootDir, GlossaryArchive.GLOSSARY))
+        writeYaml(pendingPhrases.toManifest(), GlossaryArchive.file(rootDir, GlossaryArchive.PENDING))
 
         val resourceFile = Path(fileSystemProvider.sources, resource.filename)
         if (!fileSystemProvider.exists(resourceFile)) {
             throw IllegalArgumentException("Resource file not found")
         }
-        fileSystemProvider.copyFileToDir(resourceFile, rootDir)
+        fileSystemProvider.copyFileToDir(resourceFile, sourceDir)
 
         fileSystemProvider.zipDirectory(tempDir, target)
     }
 
-    private fun manifest(glossary: Glossary, resource: Resource): ManifestGlossary {
+    private fun manifest(glossary: Glossary, resource: Resource): Manifest {
         val targetLanguage = glossary.targetLanguage
-        return ManifestGlossary(
+        return Manifest(
             dublinCore = DublinCore(
                 conformsTo = GlossaryArchive.CONFORMS_TO,
                 type = GlossaryArchive.TYPE,
@@ -80,7 +89,7 @@ class ExportGlossary(
                 modified = glossary.updatedAt.toString(),
                 version = glossary.version.toString()
             ),
-            projects = listOf(
+            projects = mutableListOf(
                 Project(
                     identifier = GlossaryArchive.IDENTIFIER,
                     title = GlossaryArchive.SUBJECT,
@@ -88,11 +97,7 @@ class ExportGlossary(
                     path = "./${GlossaryArchive.CONTENT_DIR}"
                 )
             ),
-            glossary = ManifestGlossaryInfo(
-                formatVersion = GlossaryArchive.FORMAT_VERSION,
-                code = glossary.code,
-                id = glossary.remoteId
-            )
+            checking = Checking()
         )
     }
 

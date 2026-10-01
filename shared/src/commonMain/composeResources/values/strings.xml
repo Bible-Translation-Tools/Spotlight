@@ -86,6 +86,11 @@
     <string name="downloading_glossary">Downloading Glossary...</string>
     <string name="downloading_glossary_hint">This process may take several moments to complete. We will notify you when your glossary is ready.</string>
     <string name="importing_glossary">Importing Glossary...</string>
+    <string name="import_glossary_error">Could not import glossary.</string>
+    <string name="import_glossary_error_invalid">This file is not a valid glossary backup.</string>
+    <string name="import_glossary_error_newer_format">This glossary was made with a newer version of the app. Update the app to import it.</string>
+    <string name="import_glossary_error_source_text">The glossary's source text is missing or damaged.</string>
+    <string name="import_glossary_error_language">Language %1$s is not available.</string>
     <string name="words_count">%1$d words</string>
     <string name="users_count">%1$d users</string>
     <string name="no_phrases_found">No phrases found</string>

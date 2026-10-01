@@ -18,6 +18,7 @@ import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class ImportGlossaryTest {
@@ -83,9 +84,9 @@ class ImportGlossaryTest {
 
     @Test
     fun testImportSuccess() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubBackup(rootDir, "es_glossary")
         stubYaml(rootDir, "content/phrases.yaml", contentYaml)
-        stubYaml(rootDir, "content/pending_phrases.yaml", pendingYaml)
+        stubYaml(rootDir, ".apps/spotlight/pending_phrases.yaml", pendingYaml)
         stubResourceAndRepository(rootDir)
 
         val result = importGlossary(file)
@@ -104,7 +105,7 @@ class ImportGlossaryTest {
 
         coVerify {
             fileSystemProvider.extractZip(file, tempDir)
-            fileSystemProvider.saveSource(Path(rootDir, "en_ulb.zip"), "en_ulb.zip")
+            fileSystemProvider.saveSource(Path(rootDir, ".apps/spotlight/source/en_ulb.zip"), "en_ulb.zip")
             repository.getResource("en", "ulb")
             repository.batchAddPhrases(match { phrases ->
                 phrases.map { it.phrase } == listOf("God", "Holy Spirit", "god") &&
@@ -119,16 +120,16 @@ class ImportGlossaryTest {
 
     @Test
     fun testImportFromZipRoot() = runTest {
-        stubManifest("manifest.yaml", manifestYaml())
+        stubBackup(tempDir, "")
         stubYaml(tempDir, "content/phrases.yaml", contentYaml)
-        coEvery { fileSystemProvider.exists(Path(tempDir, "content/pending_phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(tempDir, ".apps/spotlight/pending_phrases.yaml")) } returns false
         stubResourceAndRepository(tempDir)
 
         val result = importGlossary(file)
 
         assertEquals("G1", result.glossary.code)
         coVerify {
-            fileSystemProvider.saveSource(Path(tempDir, "en_ulb.zip"), "en_ulb.zip")
+            fileSystemProvider.saveSource(Path(tempDir, ".apps/spotlight/source/en_ulb.zip"), "en_ulb.zip")
             repository.batchAddPendingPhrases(emptyList())
         }
     }
@@ -137,59 +138,76 @@ class ImportGlossaryTest {
     fun testImportFailureMissingManifest() = runTest {
         coEvery { fileSystemProvider.readZipEntry(file, any()) } returns null
 
-        assertImportFails("manifest.yaml not found in zip file")
+        assertImportFails<ImportGlossaryException.InvalidBackup>("manifest.yaml not found in zip file")
+    }
+
+    @Test
+    fun testImportFailureMissingGlossary() = runTest {
+        stubBackup(rootDir, "es_glossary", glossary = null)
+
+        assertImportFails<ImportGlossaryException.InvalidBackup>(".apps/spotlight/glossary.yaml not found in zip file")
     }
 
     @Test
     fun testImportFailureMissingFormatVersion() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml(formatVersion = ""))
+        stubBackup(rootDir, "es_glossary", glossary = glossaryYaml(formatVersion = ""))
 
-        assertImportFails("Glossary format version not found in manifest.yaml")
+        assertImportFails<ImportGlossaryException.InvalidBackup>("Glossary format version not found in .apps/spotlight/glossary.yaml")
     }
 
     @Test
     fun testImportFailureNewerFormatVersion() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml(formatVersion = "  format_version: 2"))
+        stubBackup(rootDir, "es_glossary", glossary = glossaryYaml(formatVersion = "format_version: 2"))
 
-        assertImportFails("Glossary format 2 is newer than supported 1, update the app")
+        assertImportFails<ImportGlossaryException.NewerFormat>("Glossary format 2 is newer than supported 1, update the app")
+    }
+
+    @Test
+    fun testImportFailureMalformedYaml() = runTest {
+        stubBackup(rootDir, "es_glossary", glossary = "format_version: [")
+
+        assertImportFails<ImportGlossaryException.InvalidBackup>("Invalid .apps/spotlight/glossary.yaml")
     }
 
     @Test
     fun testImportFailureMissingContent() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubBackup(rootDir, "es_glossary")
         coEvery { fileSystemProvider.exists(Path(rootDir, "content/phrases.yaml")) } returns false
 
-        assertImportFails("content/phrases.yaml not found in zip file")
+        assertImportFails<ImportGlossaryException.InvalidBackup>("content/phrases.yaml not found in zip file")
     }
 
     @Test
     fun testImportFailureMissingSource() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml(source = ""))
+        stubBackup(rootDir, "es_glossary", manifest = manifestYaml(source = ""))
         stubYaml(rootDir, "content/phrases.yaml", "[]")
-        coEvery { fileSystemProvider.exists(Path(rootDir, "content/pending_phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, ".apps/spotlight/pending_phrases.yaml")) } returns false
 
-        assertImportFails("Source text not found in manifest.yaml")
+        assertImportFails<ImportGlossaryException.InvalidBackup>("Source text not found in manifest.yaml")
     }
 
     @Test
     fun testImportFailureMissingResourceZip() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubBackup(rootDir, "es_glossary")
         stubYaml(rootDir, "content/phrases.yaml", "[]")
-        coEvery { fileSystemProvider.exists(Path(rootDir, "content/pending_phrases.yaml")) } returns false
-        coEvery { fileSystemProvider.exists(Path(rootDir, "en_ulb.zip")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, ".apps/spotlight/pending_phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, ".apps/spotlight/source/en_ulb.zip")) } returns false
 
-        assertImportFails("en_ulb.zip not found in zip file")
+        assertImportFails<ImportGlossaryException.SourceText>("en_ulb.zip not found in zip file")
     }
 
     @Test
     fun testImportFailureMissingLanguage() = runTest {
-        stubManifest("es_glossary/manifest.yaml", manifestYaml())
+        stubBackup(rootDir, "es_glossary")
         stubYaml(rootDir, "content/phrases.yaml", "[]")
-        coEvery { fileSystemProvider.exists(Path(rootDir, "content/pending_phrases.yaml")) } returns false
+        coEvery { fileSystemProvider.exists(Path(rootDir, ".apps/spotlight/pending_phrases.yaml")) } returns false
         stubResourceAndRepository(rootDir)
         coEvery { repository.getLanguage("en") } returns null
 
-        assertImportFails("Source language not found in database")
+        val error = assertImportFails<ImportGlossaryException.UnknownLanguage>(
+            "Source language not found in database"
+        )
+        assertEquals("en", error.language)
     }
 
     @Test
@@ -198,7 +216,7 @@ class ImportGlossaryTest {
         val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
         val otherTarget = Glossary(code = "G1", sourceLanguage = english, targetLanguage = french, version = 1, id = "g2")
 
-        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns ("es_glossary/manifest.yaml" to manifestYaml())
+        stubZipEntries("es_glossary", manifestYaml(), glossaryYaml())
         coEvery { repository.getGlossaries() } returns listOf(otherTarget, existing)
 
         assertEquals(existing, importGlossary.findExisting(file))
@@ -208,10 +226,18 @@ class ImportGlossaryTest {
     fun testFindExistingReturnsNullWhenNoMatch() = runTest {
         val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
 
-        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns ("es_glossary/manifest.yaml" to manifestYaml(code = "G2"))
+        stubZipEntries("es_glossary", manifestYaml(), glossaryYaml(code = "G2"))
         coEvery { repository.getGlossaries() } returns listOf(existing)
 
         assertNull(importGlossary.findExisting(file))
+    }
+
+    @Test
+    fun testFindExistingFailsOnNewerFormatVersion() = runTest {
+        stubZipEntries("es_glossary", manifestYaml(), glossaryYaml(formatVersion = "format_version: 2"))
+
+        val error = assertFailsWith<ImportGlossaryException.NewerFormat> { importGlossary.findExisting(file) }
+        assertEquals("Glossary format 2 is newer than supported 1, update the app", error.message)
     }
 
     @Test
@@ -221,9 +247,14 @@ class ImportGlossaryTest {
         assertNull(importGlossary.findExisting(file))
     }
 
+    @Test
+    fun testFindExistingReturnsNullWhenGlossaryMissing() = runTest {
+        stubZipEntries("es_glossary", manifestYaml(), glossary = null)
+
+        assertNull(importGlossary.findExisting(file))
+    }
+
     private fun manifestYaml(
-        code: String = "G1",
-        formatVersion: String = "  format_version: 1",
         source: String = """
             |  source:
             |    - identifier: "ulb"
@@ -244,20 +275,51 @@ class ImportGlossaryTest {
         |  issued: "2024-01-01T00:00:00"
         |  modified: "2024-02-01T00:00:00"
         |  version: "3"
+        |checking:
+        |  checking_entity: []
+        |  checking_level: ""
         |projects:
         |  - identifier: "glossary"
         |    sort: 1
         |    path: "./content"
-        |glossary:
-        |$formatVersion
-        |  code: "$code"
-        |  id: "remote-g1"
     """.trimMargin()
 
-    private fun stubManifest(entryName: String, yaml: String) {
-        coEvery { fileSystemProvider.readZipEntry(file, any()) } returns (entryName to yaml)
+    private fun glossaryYaml(
+        code: String = "G1",
+        formatVersion: String = "format_version: 1"
+    ) = """
+        |$formatVersion
+        |code: "$code"
+        |id: "remote-g1"
+    """.trimMargin()
+
+    /** Zip entries as readZipEntry sees them, matched with the caller's predicate. */
+    private fun stubZipEntries(rootEntry: String, manifest: String, glossary: String?) {
+        val prefix = if (rootEntry.isEmpty()) "" else "$rootEntry/"
+        val entries = buildMap {
+            put("${prefix}manifest.yaml", manifest)
+            glossary?.let { put("${prefix}.apps/spotlight/glossary.yaml", it) }
+        }
+        coEvery { fileSystemProvider.readZipEntry(file, any()) } answers {
+            val predicate = secondArg<(String) -> Boolean>()
+            entries.entries.firstOrNull { predicate(it.key) }?.toPair()
+        }
+    }
+
+    private fun stubBackup(
+        dir: Path,
+        rootEntry: String,
+        manifest: String = manifestYaml(),
+        glossary: String? = glossaryYaml()
+    ) {
+        stubZipEntries(rootEntry, manifest, glossary)
         coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
         coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
+        if (glossary != null) {
+            stubYaml(dir, ".apps/spotlight/glossary.yaml", glossary)
+        } else {
+            coEvery { fileSystemProvider.exists(Path(dir, ".apps/spotlight/glossary.yaml")) } returns false
+        }
     }
 
     private fun stubYaml(dir: Path, name: String, content: String) {
@@ -266,7 +328,7 @@ class ImportGlossaryTest {
     }
 
     private fun stubResourceAndRepository(dir: Path) {
-        coEvery { fileSystemProvider.exists(Path(dir, "en_ulb.zip")) } returns true
+        coEvery { fileSystemProvider.exists(Path(dir, ".apps/spotlight/source/en_ulb.zip")) } returns true
         coEvery { fileSystemProvider.saveSource(any<Path>(), any()) } returns Path("/sources/en_ulb.zip")
         every { resourceContainerAccessor.read(any<Path>()) } returns resource
         coEvery { repository.getLanguage("en") } returns english
@@ -278,12 +340,9 @@ class ImportGlossaryTest {
         coEvery { repository.batchAddPendingPhrases(any()) } returns Unit
     }
 
-    private suspend fun assertImportFails(message: String) {
-        try {
-            importGlossary(file)
-            kotlin.test.fail("Should throw IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            assertEquals(message, e.message)
-        }
+    private suspend inline fun <reified T : ImportGlossaryException> assertImportFails(message: String): T {
+        val error = assertFailsWith<T> { importGlossary(file) }
+        assertEquals(message, error.message)
+        return error
     }
 }

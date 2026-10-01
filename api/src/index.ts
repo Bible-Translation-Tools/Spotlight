@@ -33,6 +33,7 @@ import validateEmoji from "./utils";
 import {
   buildGlossaryArchive,
   GLOSSARY_CONTENT,
+  GLOSSARY_INFO,
   GLOSSARY_MANIFEST,
   readGlossaryArchive,
 } from "./glossary.archive";
@@ -255,7 +256,7 @@ app.post("/private/api/glossary", async (c) => {
         }
       }
 
-      // Keyed by file name only: in the RC it sits under es_glossary/
+      // Keyed by file name only: in the RC it sits under es_glossary/.apps/spotlight/source/
       const resourceKey = resourceZipFilename.split("/").pop()!;
       await c.env.R2_BUCKET.put(resourceKey, resourceZipFile, {
         httpMetadata: {
@@ -266,7 +267,7 @@ app.post("/private/api/glossary", async (c) => {
 
     if (glossary == null || manifest == null) {
       throw new Error(
-        `Could not find ${GLOSSARY_MANIFEST}, ${GLOSSARY_CONTENT} or resource.zip/manifest.yaml`,
+        `Could not find ${GLOSSARY_MANIFEST}, ${GLOSSARY_INFO}, ${GLOSSARY_CONTENT} or resource.zip/manifest.yaml`,
       );
     }
 
