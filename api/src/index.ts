@@ -17,7 +17,11 @@ import {
 } from "./db/schema";
 import { and, eq, gt, sql, or, lt, ne } from "drizzle-orm";
 import { unzipSync, zipSync } from "fflate";
-import { load as parseYaml } from "js-yaml";
+import {
+  dump as dumpYaml,
+  load as parseYaml,
+  FAILSAFE_SCHEMA,
+} from "js-yaml";
 import {
   Glossary,
   GlossaryUpdate,
@@ -25,11 +29,12 @@ import {
   PhraseReview,
   GlossaryUser,
   PendingPhrase,
+  GlossaryManifest,
 } from "./glossary.types";
 import { Manifest } from "./resource.types";
 import { ErrorDetails, TokenRes, User, UserRes } from "./user.types";
 import { jwt, sign } from "hono/jwt";
-import validateEmoji from "./utils";
+import validateEmoji, { GLOSSARY_CONTENT, GLOSSARY_MANIFEST } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
 interface AppVariables extends JwtVariables {
@@ -230,10 +235,18 @@ app.post("/private/api/glossary", async (c) => {
 
     const mainArchive = unzipSync(new Uint8Array(zipArrayBuffer));
 
-    const glossaryFile = mainArchive["glossary.json"];
-    if (glossaryFile) {
-      const glossaryString = decoder.decode(glossaryFile);
-      glossary = JSON.parse(glossaryString);
+    const glossaryManifestFile = mainArchive[GLOSSARY_MANIFEST];
+    const glossaryContentFile = mainArchive[GLOSSARY_CONTENT];
+    if (glossaryManifestFile && glossaryContentFile) {
+      // Failsafe schema reads every value as a string, so a phrase like
+      // "no" or "123" can't turn into a boolean or number
+      const glossaryManifest = parseYaml(decoder.decode(glossaryManifestFile), {
+        schema: FAILSAFE_SCHEMA,
+      }) as GlossaryManifest;
+      const phrases = (parseYaml(decoder.decode(glossaryContentFile), {
+        schema: FAILSAFE_SCHEMA,
+      }) ?? []) as Phrase[];
+      glossary = { ...glossaryManifest, phrases };
     }
 
     const resourceZipFilename = Object.keys(mainArchive).find((name) =>
@@ -263,7 +276,7 @@ app.post("/private/api/glossary", async (c) => {
 
     if (glossary == null || manifest == null) {
       throw new Error(
-        "Could not find glossary.json or resource.zip/manifest.yml",
+        `Could not find ${GLOSSARY_MANIFEST}, ${GLOSSARY_CONTENT} or resource.zip/manifest.yaml`,
       );
     }
 
@@ -343,7 +356,7 @@ app.post("/private/api/glossary", async (c) => {
         phrase: phrase.phrase,
         spelling: phrase.spelling,
         description: phrase.description,
-        audio: phrase.audio,
+        audio: phrase.audio ?? "",
         glossaryId: glossaryId,
       }));
 
@@ -535,9 +548,31 @@ app.get("/public/api/glossary/:code", async (c) => {
       );
     }
     const resourceBytes = await resourceFile.arrayBuffer();
-    const glossaryJson = JSON.stringify(glossary, null, 4);
+    const glossaryManifest: GlossaryManifest = {
+      id: glossary.id,
+      code: glossary.code,
+      sourceLanguage: glossary.sourceLanguage,
+      targetLanguage: glossary.targetLanguage,
+      version: glossary.version,
+      createdAt: glossary.createdAt.toISOString(),
+      updatedAt: glossary.updatedAt.toISOString(),
+      resource: glossary.resource,
+    };
+    // Sorted, so the same glossary always produces the same file
+    const phrases = glossary.phrases
+      .map((phrase) => ({
+        ...phrase,
+        createdAt: phrase.createdAt.toISOString(),
+        updatedAt: phrase.updatedAt.toISOString(),
+      }))
+      .sort((a, b) => (a.phrase < b.phrase ? -1 : a.phrase > b.phrase ? 1 : 0));
+
+    // lineWidth -1 keeps long descriptions on one line instead of folding them
     const mainZipContents = {
-      "glossary.json": encoder.encode(glossaryJson),
+      [GLOSSARY_MANIFEST]: encoder.encode(
+        dumpYaml(glossaryManifest, { lineWidth: -1 }),
+      ),
+      [GLOSSARY_CONTENT]: encoder.encode(dumpYaml(phrases, { lineWidth: -1 })),
       [resourceFilename]: new Uint8Array(resourceBytes),
     };
     const mainZipBytes = zipSync(mainZipContents);

@@ -36,32 +36,57 @@ class ImportGlossaryTest {
     fun testImportSuccess() = runTest {
         val file: PlatformFile = mockk()
         val tempDir = Path("/tmp/glossary")
-        val glossaryJsonPath = Path(tempDir, "glossary.json")
+        val manifestPath = Path(tempDir, "manifest.yml")
         val resourceZipPath = Path(tempDir, "en_ulb.zip")
         
-        val glossaryJson = """
-            {
-                "id": "remote-g1",
-                "code": "G1",
-                "sourceLanguage": "en",
-                "targetLanguage": "es",
-                "version": 1,
-                "createdAt": "2024-01-01T00:00:00",
-                "updatedAt": "2024-01-01T00:00:00",
-                "resource": {
-                    "language": "en",
-                    "type": "ulb",
-                    "version": "1"
-                },
-                "phrases": [],
-                "pendingPhrases": []
-            }
+        val manifestYaml = """
+            id: "remote-g1"
+            code: "G1"
+            sourceLanguage: "en"
+            targetLanguage: "es"
+            version: 1
+            createdAt: "2024-01-01T00:00:00"
+            updatedAt: "2024-01-01T00:00:00"
+            resource:
+              language: "en"
+              type: "ulb"
+              version: "1"
         """.trimIndent()
         
-        coEvery { fileSystemProvider.exists(glossaryJsonPath) } returns true
-        coEvery { fileSystemProvider.readFile(glossaryJsonPath) } returns glossaryJson
+        val contentYaml = """
+            - phrase: "God"
+              spelling: "Dios"
+              description: "line 1"
+              createdAt: "2024-01-01T00:00:00"
+              updatedAt: "2024-01-01T00:00:00"
+            - phrase: "Holy Spirit"
+              spelling: ""
+              description: |-
+                line 1
+                line 2
+              audio: ""
+              createdAt: "2024-01-01T00:00:00"
+              updatedAt: "2024-01-01T00:00:00"
+            - phrase: "god"
+              spelling: ""
+              description: ""
+              createdAt: "2024-01-01T00:00:00"
+              updatedAt: "2024-01-01T00:00:00"
+        """.trimIndent()
+        val pendingYaml = """
+            - phrase: "grace"
+              spelling: ""
+              description: ""
+              createdAt: "2024-01-01T00:00:00"
+              updatedAt: "2024-01-01T00:00:00"
+        """.trimIndent()
+
+        coEvery { fileSystemProvider.exists(manifestPath) } returns true
+        coEvery { fileSystemProvider.readFile(manifestPath) } returns manifestYaml
         coEvery { fileSystemProvider.exists(resourceZipPath) } returns true
-        
+        stubYaml(tempDir, "content.yml", contentYaml)
+        stubYaml(tempDir, "pending.yml", pendingYaml)
+
         val sourceLang = Language("en", "English", "ltr")
         val targetLang = Language("es", "Spanish", "ltr")
         val resource = Resource(
@@ -93,31 +118,57 @@ class ImportGlossaryTest {
         val result = importGlossary(file)
 
         assertEquals("g1", result.glossary.id)
+        assertEquals("remote-g1", result.glossary.remoteId)
         assertEquals(resource.id, result.resource.id)
 
         coVerify {
             fileSystemProvider.createTempDir(any())
             fileSystemProvider.extractZip(file, tempDir)
             repository.addGlossary(any())
-            repository.batchAddPhrases(any())
+            repository.batchAddPhrases(match { phrases ->
+                phrases.map { it.phrase } == listOf("God", "Holy Spirit", "god") &&
+                        phrases[1].description == "line 1\nline 2" &&
+                        phrases.all { it.glossaryId == "g1" }
+            })
+            repository.batchAddPendingPhrases(match { phrases ->
+                phrases.map { it.phrase } == listOf("grace")
+            })
         }
     }
 
     @Test
-    fun testImportFailureMissingGlossaryJson() = runTest {
+    fun testImportFailureMissingManifest() = runTest {
         val file: PlatformFile = mockk()
         val tempDir = Path("/tmp/glossary")
-        val glossaryJsonPath = Path(tempDir, "glossary.json")
+        val manifestPath = Path(tempDir, "manifest.yml")
 
         coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
         coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        coEvery { fileSystemProvider.exists(glossaryJsonPath) } returns false
+        coEvery { fileSystemProvider.exists(manifestPath) } returns false
 
         try {
             importGlossary(file)
             kotlin.test.fail("Should throw IllegalArgumentException")
         } catch (e: IllegalArgumentException) {
-            assertEquals("glossary.json not found in zip file", e.message)
+            assertEquals("manifest.yml not found in zip file", e.message)
+        }
+    }
+
+    @Test
+    fun testImportFailureMissingContent() = runTest {
+        val file: PlatformFile = mockk()
+        val tempDir = Path("/tmp/glossary")
+
+        coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
+        coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
+        stubYaml(tempDir, "manifest.yml", "code: \"G1\"")
+        coEvery { fileSystemProvider.exists(Path(tempDir, "content.yml")) } returns false
+
+        try {
+            importGlossary(file)
+            kotlin.test.fail("Should throw IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertEquals("content.yml not found in zip file", e.message)
         }
     }
 
@@ -125,32 +176,29 @@ class ImportGlossaryTest {
     fun testImportFailureMissingResourceZip() = runTest {
         val file: PlatformFile = mockk()
         val tempDir = Path("/tmp/glossary")
-        val glossaryJsonPath = Path(tempDir, "glossary.json")
+        val manifestPath = Path(tempDir, "manifest.yml")
         val resourceZipPath = Path(tempDir, "en_ulb.zip")
         
-        val glossaryJson = """
-            {
-                "id": "remote-g1",
-                "code": "G1",
-                "sourceLanguage": "en",
-                "targetLanguage": "es",
-                "version": 1,
-                "createdAt": "2024-01-01T00:00:00",
-                "updatedAt": "2024-01-01T00:00:00",
-                "resource": {
-                    "language": "en",
-                    "type": "ulb",
-                    "version": "1"
-                },
-                "phrases": [],
-                "pendingPhrases": []
-            }
+        val manifestYaml = """
+            id: "remote-g1"
+            code: "G1"
+            sourceLanguage: "en"
+            targetLanguage: "es"
+            version: 1
+            createdAt: "2024-01-01T00:00:00"
+            updatedAt: "2024-01-01T00:00:00"
+            resource:
+              language: "en"
+              type: "ulb"
+              version: "1"
         """.trimIndent()
 
         coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
         coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        coEvery { fileSystemProvider.exists(glossaryJsonPath) } returns true
-        coEvery { fileSystemProvider.readFile(glossaryJsonPath) } returns glossaryJson
+        coEvery { fileSystemProvider.exists(manifestPath) } returns true
+        coEvery { fileSystemProvider.readFile(manifestPath) } returns manifestYaml
+        stubYaml(tempDir, "content.yml", "[]")
+        coEvery { fileSystemProvider.exists(Path(tempDir, "pending.yml")) } returns false
         coEvery { fileSystemProvider.exists(resourceZipPath) } returns false
 
         try {
@@ -165,26 +213,21 @@ class ImportGlossaryTest {
     fun testImportFailureMissingLanguage() = runTest {
         val file: PlatformFile = mockk()
         val tempDir = Path("/tmp/glossary")
-        val glossaryJsonPath = Path(tempDir, "glossary.json")
+        val manifestPath = Path(tempDir, "manifest.yml")
         val resourceZipPath = Path(tempDir, "en_ulb.zip")
         
-        val glossaryJson = """
-            {
-                "id": "remote-g1",
-                "code": "G1",
-                "sourceLanguage": "en",
-                "targetLanguage": "es",
-                "version": 1,
-                "createdAt": "2024-01-01T00:00:00",
-                "updatedAt": "2024-01-01T00:00:00",
-                "resource": {
-                    "language": "en",
-                    "type": "ulb",
-                    "version": "1"
-                },
-                "phrases": [],
-                "pendingPhrases": []
-            }
+        val manifestYaml = """
+            id: "remote-g1"
+            code: "G1"
+            sourceLanguage: "en"
+            targetLanguage: "es"
+            version: 1
+            createdAt: "2024-01-01T00:00:00"
+            updatedAt: "2024-01-01T00:00:00"
+            resource:
+              language: "en"
+              type: "ulb"
+              version: "1"
         """.trimIndent()
 
         val resource = Resource(
@@ -202,8 +245,10 @@ class ImportGlossaryTest {
 
         coEvery { fileSystemProvider.createTempDir(any()) } returns tempDir
         coEvery { fileSystemProvider.extractZip(any(), any()) } returns Unit
-        coEvery { fileSystemProvider.exists(glossaryJsonPath) } returns true
-        coEvery { fileSystemProvider.readFile(glossaryJsonPath) } returns glossaryJson
+        coEvery { fileSystemProvider.exists(manifestPath) } returns true
+        coEvery { fileSystemProvider.readFile(manifestPath) } returns manifestYaml
+        stubYaml(tempDir, "content.yml", "[]")
+        coEvery { fileSystemProvider.exists(Path(tempDir, "pending.yml")) } returns false
         coEvery { fileSystemProvider.exists(resourceZipPath) } returns true
         every { resourceContainerAccessor.read(any<Path>()) } returns resource
         coEvery { repository.addResource(any()) } returns Unit
@@ -225,21 +270,17 @@ class ImportGlossaryTest {
     @Test
     fun testFindExistingReturnsMatchingGlossary() = runTest {
         val file: PlatformFile = mockk()
-        val glossaryJson = """
-            {
-                "code": "G1",
-                "sourceLanguage": "en",
-                "targetLanguage": "es",
-                "version": 1,
-                "createdAt": "2024-01-01T00:00:00",
-                "updatedAt": "2024-01-01T00:00:00",
-                "resource": {
-                    "language": "en",
-                    "type": "ulb",
-                    "version": "1"
-                },
-                "phrases": []
-            }
+        val manifestYaml = """
+            code: "G1"
+            sourceLanguage: "en"
+            targetLanguage: "es"
+            version: 1
+            createdAt: "2024-01-01T00:00:00"
+            updatedAt: "2024-01-01T00:00:00"
+            resource:
+              language: "en"
+              type: "ulb"
+              version: "1"
         """.trimIndent()
 
         val english = Language("en", "English", "ltr")
@@ -248,7 +289,7 @@ class ImportGlossaryTest {
         val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
         val otherTarget = Glossary(code = "G1", sourceLanguage = english, targetLanguage = french, version = 1, id = "g2")
 
-        coEvery { fileSystemProvider.readZipEntry(file, "glossary.json") } returns glossaryJson
+        coEvery { fileSystemProvider.readZipEntry(file, "manifest.yml") } returns manifestYaml
         coEvery { repository.getGlossaries() } returns listOf(otherTarget, existing)
 
         assertEquals(existing, importGlossary.findExisting(file))
@@ -257,39 +298,40 @@ class ImportGlossaryTest {
     @Test
     fun testFindExistingReturnsNullWhenNoMatch() = runTest {
         val file: PlatformFile = mockk()
-        val glossaryJson = """
-            {
-                "code": "G2",
-                "sourceLanguage": "en",
-                "targetLanguage": "es",
-                "version": 1,
-                "createdAt": "2024-01-01T00:00:00",
-                "updatedAt": "2024-01-01T00:00:00",
-                "resource": {
-                    "language": "en",
-                    "type": "ulb",
-                    "version": "1"
-                },
-                "phrases": []
-            }
+        val manifestYaml = """
+            code: "G2"
+            sourceLanguage: "en"
+            targetLanguage: "es"
+            version: 1
+            createdAt: "2024-01-01T00:00:00"
+            updatedAt: "2024-01-01T00:00:00"
+            resource:
+              language: "en"
+              type: "ulb"
+              version: "1"
         """.trimIndent()
 
         val english = Language("en", "English", "ltr")
         val spanish = Language("es", "Spanish", "ltr")
         val existing = Glossary(code = "G1", sourceLanguage = english, targetLanguage = spanish, version = 1, id = "g1")
 
-        coEvery { fileSystemProvider.readZipEntry(file, "glossary.json") } returns glossaryJson
+        coEvery { fileSystemProvider.readZipEntry(file, "manifest.yml") } returns manifestYaml
         coEvery { repository.getGlossaries() } returns listOf(existing)
 
         assertNull(importGlossary.findExisting(file))
     }
 
     @Test
-    fun testFindExistingReturnsNullWhenGlossaryJsonMissing() = runTest {
+    fun testFindExistingReturnsNullWhenManifestMissing() = runTest {
         val file: PlatformFile = mockk()
 
-        coEvery { fileSystemProvider.readZipEntry(file, "glossary.json") } returns null
+        coEvery { fileSystemProvider.readZipEntry(file, "manifest.yml") } returns null
 
         assertNull(importGlossary.findExisting(file))
+    }
+
+    private fun stubYaml(dir: Path, name: String, content: String) {
+        coEvery { fileSystemProvider.exists(Path(dir, name)) } returns true
+        coEvery { fileSystemProvider.readFile(Path(dir, name)) } returns content
     }
 }

@@ -5,10 +5,12 @@ import kotlinx.io.files.Path
 
 import org.bibletranslationtools.glossary.Utils
 import org.bibletranslationtools.glossary.data.Glossary
+import org.bibletranslationtools.glossary.data.Phrase
 import org.bibletranslationtools.glossary.data.api.ManifestGlossary
 import org.bibletranslationtools.glossary.data.api.ManifestPhrase
 import org.bibletranslationtools.glossary.data.api.ManifestResource
 import org.bibletranslationtools.glossary.domain.FileSystemProvider
+import org.bibletranslationtools.glossary.domain.GlossaryArchive
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 
 class ExportGlossary(
@@ -21,7 +23,7 @@ class ExportGlossary(
         val phrases = glossaryRepository.getPhrases(glossary.id)
         val pendingPhrases = glossaryRepository.getPendingPhrases(glossary.id)
 
-        val export = ManifestGlossary(
+        val manifest = ManifestGlossary(
             id = glossary.remoteId,
             code = glossary.code,
             sourceLanguage = glossary.sourceLanguage.slug,
@@ -33,34 +35,14 @@ class ExportGlossary(
                 language = resource.lang,
                 type = resource.type,
                 version = resource.version
-            ),
-            phrases = phrases.map { phrase ->
-                ManifestPhrase(
-                    phrase = phrase.phrase,
-                    spelling = phrase.spelling,
-                    description = phrase.description,
-                    audio = phrase.audio,
-                    createdAt = phrase.createdAt.toString(),
-                    updatedAt = phrase.updatedAt.toString()
-                )
-            },
-            pendingPhrases = pendingPhrases.map { phrase ->
-                ManifestPhrase(
-                    phrase = phrase.phrase,
-                    spelling = phrase.spelling,
-                    description = phrase.description,
-                    audio = phrase.audio,
-                    createdAt = phrase.createdAt.toString(),
-                    updatedAt = phrase.updatedAt.toString()
-                )
-            }
+            )
         )
 
-        val json = Utils.JsonLenient.encodeToString(export)
         val tempDir = fileSystemProvider.createTempDir("glossary")
 
-        val glossaryFile = Path(tempDir, "glossary.json")
-        fileSystemProvider.writeFile(json, glossaryFile)
+        writeYaml(manifest, Path(tempDir, GlossaryArchive.MANIFEST))
+        writeYaml(phrases.toManifest(), Path(tempDir, GlossaryArchive.CONTENT))
+        writeYaml(pendingPhrases.toManifest(), Path(tempDir, GlossaryArchive.PENDING))
 
         val resourceFile = Path(fileSystemProvider.sources, resource.filename)
         if (!fileSystemProvider.exists(resourceFile)) {
@@ -69,5 +51,23 @@ class ExportGlossary(
         fileSystemProvider.copyFileToDir(resourceFile, tempDir)
 
         fileSystemProvider.zipDirectory(tempDir, target)
+    }
+
+    private suspend fun writeYaml(value: Any, file: Path) {
+        fileSystemProvider.writeFile(Utils.Yaml.writeValueAsString(value), file)
+    }
+
+    // Sorted, so the same glossary always produces the same file
+    private fun List<Phrase>.toManifest(): List<ManifestPhrase> {
+        return sortedBy { it.phrase }.map { phrase ->
+            ManifestPhrase(
+                phrase = phrase.phrase,
+                spelling = phrase.spelling,
+                description = phrase.description,
+                audio = phrase.audio,
+                createdAt = phrase.createdAt.toString(),
+                updatedAt = phrase.updatedAt.toString()
+            )
+        }
     }
 }

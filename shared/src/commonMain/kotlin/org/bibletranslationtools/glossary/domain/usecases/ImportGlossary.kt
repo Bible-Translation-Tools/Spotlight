@@ -1,5 +1,6 @@
 package org.bibletranslationtools.glossary.domain.usecases
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.io.files.Path
 import org.bibletranslationtools.glossary.Utils
@@ -9,6 +10,7 @@ import org.bibletranslationtools.glossary.data.Resource
 import org.bibletranslationtools.glossary.data.api.ManifestGlossary
 import org.bibletranslationtools.glossary.data.api.ManifestPhrase
 import org.bibletranslationtools.glossary.domain.FileSystemProvider
+import org.bibletranslationtools.glossary.domain.GlossaryArchive
 import org.bibletranslationtools.glossary.domain.persistence.GlossaryRepository
 import org.bibletranslationtools.glossary.logE
 import org.bibletranslationtools.glossary.platform.ResourceContainerAccessor
@@ -24,18 +26,24 @@ class ImportGlossary(
         val resource: Resource
     )
 
+    private data class Backup(
+        val manifest: ManifestGlossary,
+        val phrases: List<ManifestPhrase>,
+        val pendingPhrases: List<ManifestPhrase>
+    )
+
     /**
      * Returns the glossary already stored on the device that importing
      * [file] would overwrite, or null if there is none.
      */
     suspend fun findExisting(file: PlatformFile): Glossary? {
-        val json = fileSystemProvider.readZipEntry(file, "glossary.json") ?: return null
-        val glossaryDict: ManifestGlossary = Utils.JsonLenient.decodeFromString(json)
+        val yaml = fileSystemProvider.readZipEntry(file, GlossaryArchive.MANIFEST) ?: return null
+        val manifest = Utils.Yaml.readValue<ManifestGlossary>(yaml)
 
         return glossaryRepository.getGlossaries().firstOrNull {
-            it.code == glossaryDict.code &&
-                    it.sourceLanguage.slug == glossaryDict.sourceLanguage &&
-                    it.targetLanguage.slug == glossaryDict.targetLanguage
+            it.code == manifest.code &&
+                    it.sourceLanguage.slug == manifest.sourceLanguage &&
+                    it.targetLanguage.slug == manifest.targetLanguage
         }
     }
 
@@ -44,16 +52,8 @@ class ImportGlossary(
         val tempDir = fileSystemProvider.createTempDir("glossary")
         fileSystemProvider.extractZip(file, tempDir)
 
-        val glossaryFile = Path(tempDir, "glossary.json")
-
-        if (!fileSystemProvider.exists(glossaryFile)) {
-            throw IllegalArgumentException("glossary.json not found in zip file")
-        }
-
-        val json = fileSystemProvider.readFile(glossaryFile)
-            ?: throw IllegalArgumentException("Failed to read glossary.json")
-
-        val glossaryDict: ManifestGlossary = Utils.JsonLenient.decodeFromString(json)
+        val backup = readBackup(tempDir)
+        val glossaryDict = backup.manifest
 
         val resourceId = glossaryDict.resource.toString()
         val resourceFile = Path(tempDir, "$resourceId.zip")
@@ -84,12 +84,12 @@ class ImportGlossary(
         val phrasesToInsert = mutableListOf<Phrase>()
         val pendingPhrasesToInsert = mutableListOf<Phrase>()
 
-        glossaryDict.phrases.forEach { phrase ->
+        backup.phrases.forEach { phrase ->
             val dbPhrase = mapPhrase(phrase, glossaryId)
             phrasesToInsert.add(dbPhrase)
         }
 
-        glossaryDict.pendingPhrases.forEach { phrase ->
+        backup.pendingPhrases.forEach { phrase ->
             val dbPhrase = mapPhrase(phrase, glossaryId)
             pendingPhrasesToInsert.add(dbPhrase)
         }
@@ -101,6 +101,27 @@ class ImportGlossary(
             glossary = glossary.copy(id = glossaryId),
             resource = resource
         )
+    }
+
+    private suspend fun readBackup(dir: Path): Backup {
+        val manifest = readYaml(Path(dir, GlossaryArchive.MANIFEST))
+            ?: throw IllegalArgumentException("${GlossaryArchive.MANIFEST} not found in zip file")
+        val phrases = readYaml(Path(dir, GlossaryArchive.CONTENT))
+            ?: throw IllegalArgumentException("${GlossaryArchive.CONTENT} not found in zip file")
+        // Server downloads carry no pending phrases
+        val pendingPhrases = readYaml(Path(dir, GlossaryArchive.PENDING)) ?: "[]"
+
+        return Backup(
+            manifest = Utils.Yaml.readValue<ManifestGlossary>(manifest),
+            phrases = Utils.Yaml.readValue<List<ManifestPhrase>>(phrases),
+            pendingPhrases = Utils.Yaml.readValue<List<ManifestPhrase>>(pendingPhrases)
+        )
+    }
+
+    private suspend fun readYaml(file: Path): String? {
+        if (!fileSystemProvider.exists(file)) return null
+        return fileSystemProvider.readFile(file)
+            ?: throw IllegalArgumentException("Failed to read ${file.name}")
     }
 
     private suspend fun mapGlossary(

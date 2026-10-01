@@ -27,3 +27,10 @@
 ##---------------------------------------------------------------------------------
 -keep class org.wycliffeassociates.** { *; }
 -dontwarn org.wycliffeassociates.**
+
+##---------------------------------------------------------------------------------
+# Glossary backup YAML (manifest.yml, content.yml, pending.yml) is (de)serialized via Jackson reflection.
+##---------------------------------------------------------------------------------
+-keep class org.bibletranslationtools.glossary.data.api.ManifestGlossary { *; }
+-keep class org.bibletranslationtools.glossary.data.api.ManifestResource { *; }
+-keep class org.bibletranslationtools.glossary.data.api.ManifestPhrase { *; }

@@ -17,14 +17,18 @@ export interface Resource {
   version: string;
 }
 
-export interface Glossary {
+export interface GlossaryManifest {
   id: string | null;
   code: string;
   sourceLanguage: string;
   targetLanguage: string;
+  version: number;
   createdAt: string;
   updatedAt: string;
   resource: Resource;
+}
+
+export interface Glossary extends Omit<GlossaryManifest, "version"> {
   phrases: Phrase[];
 }
 

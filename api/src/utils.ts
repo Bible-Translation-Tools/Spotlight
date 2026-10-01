@@ -5,3 +5,6 @@ export default function validateEmoji(input: string): boolean {
   const emoji = segments[0].segment;
   return /\p{Extended_Pictographic}|\p{Emoji_Presentation}/u.test(emoji);
 }
+
+export const GLOSSARY_MANIFEST = "manifest.yml";
+export const GLOSSARY_CONTENT = "content.yml";

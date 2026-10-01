@@ -11,7 +11,5 @@ data class ManifestGlossary(
     val createdAt: String,
     val updatedAt: String,
     val resource: ManifestResource,
-    val phrases: List<ManifestPhrase>,
-    val pendingPhrases: List<ManifestPhrase> = emptyList(),
     val id: String? = null,
 )
