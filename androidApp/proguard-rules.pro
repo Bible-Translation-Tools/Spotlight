@@ -17,6 +17,8 @@
 # jackson-module-kotlin reads Kotlin metadata via this annotation.
 -keep class kotlin.Metadata { *; }
 
+-keep,allowobfuscation,allowshrinking class * extends com.fasterxml.jackson.core.type.TypeReference
+
 # snakeyaml is bundled by jackson-dataformat-yaml and instantiates beans via reflection.
 -keep class org.yaml.snakeyaml.** { *; }
 -dontwarn org.yaml.snakeyaml.**
