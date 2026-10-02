@@ -1,7 +1,8 @@
 export interface DublinCoreLanguage {
   identifier: string;
   title: string;
-  direction: "ltr" | "rtl";
+  // Empty when unknown, e.g. in glossary backups built by the server
+  direction: "ltr" | "rtl" | "";
 }
 
 export interface Source {

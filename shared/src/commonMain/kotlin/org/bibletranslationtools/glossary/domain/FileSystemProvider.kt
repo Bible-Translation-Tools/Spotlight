@@ -27,6 +27,7 @@ interface FileSystemProvider {
     suspend fun writeFile(bytes: ByteArray, path: Path)
     suspend fun writeFile(content: String, path: Path)
     fun exists(path: Path): Boolean
+    suspend fun createDirectories(path: Path)
 
     suspend fun deleteFile(file: Path)
     suspend fun deleteFile(fileName: String)
@@ -104,6 +105,10 @@ class FileSystemProviderImpl : FileSystemProvider {
 
     override fun exists(path: Path): Boolean {
         return SystemFileSystem.exists(path)
+    }
+
+    override suspend fun createDirectories(path: Path) {
+        SystemFileSystem.createDirectories(path)
     }
 
     override suspend fun deleteFile(file: Path) {

@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.io.IOException
 import kotlinx.io.files.Path
 import org.bibletranslationtools.glossary.data.Glossary
 import org.bibletranslationtools.glossary.data.Resource
@@ -20,13 +21,21 @@ import org.bibletranslationtools.glossary.domain.FileSystemProvider
 import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.NetworkResult
 import org.bibletranslationtools.glossary.domain.usecases.ImportGlossary
+import org.bibletranslationtools.glossary.domain.usecases.ImportGlossaryException
 import org.bibletranslationtools.glossary.ui.components.OtpAction
 import org.bibletranslationtools.glossary.ui.drawer.DrawerContext
 import org.bibletranslationtools.glossary.waitForCondition
 import org.bibletranslationtools.glossary.settle
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.jetbrains.compose.resources.getString
 import org.koin.dsl.module
+import spotlight.shared.generated.resources.Res
+import spotlight.shared.generated.resources.import_glossary_error
+import spotlight.shared.generated.resources.import_glossary_error_invalid
+import spotlight.shared.generated.resources.import_glossary_error_language
+import spotlight.shared.generated.resources.import_glossary_error_newer_format
+import spotlight.shared.generated.resources.import_glossary_error_source_text
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -183,6 +192,67 @@ class ImportGlossaryComponentTest {
         assertNull(component.model.value.overwriteRequest)
         coVerify(exactly = 1) { importGlossary(file) }
     }
+
+    @Test
+    fun testOnImportClickedUnsupportedFormatShowsError() = runTest(testDispatcher) {
+        val file: PlatformFile = mockk()
+
+        coEvery { importGlossary.findExisting(file) } throws ImportGlossaryException.NewerFormat(2, 1)
+
+        val component = createComponent()
+
+        component.onImportClicked(file)
+        testScheduler.advanceUntilIdle()
+
+        waitForCondition { component.model.value.error != null }
+
+        assertEquals(
+            getString(Res.string.import_glossary_error_newer_format),
+            component.model.value.error
+        )
+        assertNull(component.model.value.overwriteRequest)
+        coVerify(exactly = 0) { importGlossary(file) }
+    }
+
+    @Test
+    fun testOnImportClickedImportFailureShowsError() = runTest(testDispatcher) {
+        val expected = mapOf(
+            ImportGlossaryException.InvalidBackup("manifest.yaml not found in zip file") to
+                    getString(Res.string.import_glossary_error_invalid),
+            ImportGlossaryException.SourceText("en_ulb.zip not found in zip file") to
+                    getString(Res.string.import_glossary_error_source_text),
+            ImportGlossaryException.UnknownLanguage("xyz", "Target language not found in database") to
+                    getString(Res.string.import_glossary_error_language, "xyz"),
+            IOException("Disk full") to getString(Res.string.import_glossary_error)
+        )
+
+        expected.forEach { (exception, message) ->
+            val file: PlatformFile = mockk()
+            coEvery { importGlossary.findExisting(file) } returns null
+            coEvery { importGlossary(file) } throws exception
+
+            var importFinished = false
+            val component = createComponent(onImportFinished = { importFinished = true })
+
+            component.onImportClicked(file)
+            testScheduler.advanceUntilIdle()
+
+            waitForCondition { component.model.value.error != null }
+
+            assertEquals(message, component.model.value.error)
+            assertNull(component.model.value.progress)
+            assertFalse(importFinished)
+        }
+    }
+
+    private fun createComponent(onImportFinished: () -> Unit = {}) = DefaultImportGlossaryComponent(
+        componentContext = DefaultComponentContext(lifecycle = LifecycleRegistry()),
+        parentContext = parentContext,
+        autoImportManually = false,
+        onSelectGlossary = { _, _ -> },
+        onSelectResource = {},
+        onImportFinished = onImportFinished
+    )
 
     @Test
     fun testOverwriteDismissedSkipsImport() = runTest(testDispatcher) {
