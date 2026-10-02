@@ -18,6 +18,7 @@ import org.bibletranslationtools.glossary.domain.FileSystemProvider
 import org.bibletranslationtools.glossary.domain.GlossaryApi
 import org.bibletranslationtools.glossary.domain.NetworkResult
 import org.bibletranslationtools.glossary.domain.usecases.ImportGlossary
+import org.bibletranslationtools.glossary.domain.usecases.ImportGlossaryException
 import org.bibletranslationtools.glossary.logE
 import org.bibletranslationtools.glossary.ui.components.OtpAction
 import org.bibletranslationtools.glossary.ui.drawer.DrawerComponent
@@ -27,6 +28,11 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import spotlight.shared.generated.resources.Res
 import spotlight.shared.generated.resources.downloading_glossary
+import spotlight.shared.generated.resources.import_glossary_error
+import spotlight.shared.generated.resources.import_glossary_error_invalid
+import spotlight.shared.generated.resources.import_glossary_error_language
+import spotlight.shared.generated.resources.import_glossary_error_newer_format
+import spotlight.shared.generated.resources.import_glossary_error_source_text
 import spotlight.shared.generated.resources.importing_glossary
 
 interface ImportGlossaryComponent : DrawerContext {
@@ -38,12 +44,15 @@ interface ImportGlossaryComponent : DrawerContext {
         val focusedIndex: Int? = null,
         val autoImportManually: Boolean = false,
         val progress: Progress? = null,
-        val error: String? = null
+        val error: String? = null,
+        val overwriteRequest: Glossary? = null
     )
 
     fun onOtpAction(action: OtpAction)
     fun onDownloadClicked()
     fun onImportClicked(file: PlatformFile)
+    fun onOverwriteConfirmed()
+    fun onOverwriteDismissed()
 }
 
 class DefaultImportGlossaryComponent(
@@ -63,6 +72,8 @@ class DefaultImportGlossaryComponent(
     override val model: Value<ImportGlossaryComponent.Model> = _model
 
     private val componentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private var pendingImportFile: PlatformFile? = null
 
     init {
         doOnResume {
@@ -139,14 +150,14 @@ class DefaultImportGlossaryComponent(
 
                 val code = model.value.otpCode.joinToString("")
 
-                val result: ImportGlossary.Result? = withContext(Dispatchers.IO) {
+                val file: PlatformFile? = withContext(Dispatchers.IO) {
                     val result = glossaryApi.downloadGlossary(code)
                     if (result is NetworkResult.Success) {
                         val target = fileSystemProvider.createTempFile("download", ".zip")
                         fileSystemProvider.writeFile(result.data, target)
 
                         if (fileSystemProvider.exists(target)) {
-                            importGlossaryUseCase(PlatformFile(target))
+                            PlatformFile(target)
                         } else null
                     } else {
                         _model.update { it.copy(error = result.toString()) }
@@ -155,11 +166,7 @@ class DefaultImportGlossaryComponent(
                     }
                 }
 
-                result?.let {
-                    onSelectResource(it.resource)
-                    onSelectGlossary(it.glossary, true)
-                    onImportFinished()
-                }
+                file?.let { importOrConfirmOverwrite(it) }
 
                 _model.update { it.copy(progress = null) }
             }
@@ -167,23 +174,81 @@ class DefaultImportGlossaryComponent(
     }
 
     override fun onImportClicked(file: PlatformFile) {
-        componentScope.launch {
-            val progress = Progress(
-                value = -1f,
-                message = getString(Res.string.importing_glossary)
-            )
-            _model.update { it.copy(progress = progress) }
+        componentScope.launch { importOrConfirmOverwrite(file) }
+    }
 
-            val result = withContext(Dispatchers.Default) {
+    override fun onOverwriteConfirmed() {
+        val file = pendingImportFile ?: return
+        pendingImportFile = null
+        _model.update { it.copy(overwriteRequest = null) }
+        componentScope.launch { importFile(file) }
+    }
+
+    override fun onOverwriteDismissed() {
+        pendingImportFile = null
+        _model.update { it.copy(overwriteRequest = null) }
+    }
+
+    private suspend fun importOrConfirmOverwrite(file: PlatformFile) {
+        _model.update { it.copy(error = null) }
+
+        val existing = try {
+            withContext(Dispatchers.Default) {
+                importGlossaryUseCase.findExisting(file)
+            }
+        } catch (e: Exception) {
+            // Importing would fail the same way, e.g. a backup from a newer app version
+            this.logE("Failed to check existing glossary", e)
+            val error = importErrorMessage(e)
+            _model.update { it.copy(error = error) }
+            return
+        }
+
+        if (existing != null) {
+            pendingImportFile = file
+            _model.update { it.copy(overwriteRequest = existing) }
+        } else {
+            importFile(file)
+        }
+    }
+
+    private suspend fun importFile(file: PlatformFile) {
+        val progress = Progress(
+            value = -1f,
+            message = getString(Res.string.importing_glossary)
+        )
+        _model.update { it.copy(progress = progress) }
+
+        val result = try {
+            withContext(Dispatchers.Default) {
                 importGlossaryUseCase(file)
             }
+        } catch (e: Exception) {
+            this.logE("Failed to import glossary", e)
+            val error = importErrorMessage(e)
+            _model.update { it.copy(progress = null, error = error) }
+            return
+        }
 
-            onSelectResource(result.resource)
-            onSelectGlossary(result.glossary, true)
+        onSelectResource(result.resource)
+        onSelectGlossary(result.glossary, true)
 
-            _model.update { it.copy(progress = null) }
+        _model.update { it.copy(progress = null) }
 
-            onImportFinished()
+        onImportFinished()
+    }
+
+    private suspend fun importErrorMessage(e: Exception): String {
+        return when (e) {
+            is ImportGlossaryException.InvalidBackup ->
+                getString(Res.string.import_glossary_error_invalid)
+            is ImportGlossaryException.NewerFormat ->
+                getString(Res.string.import_glossary_error_newer_format)
+            is ImportGlossaryException.SourceText ->
+                getString(Res.string.import_glossary_error_source_text)
+            is ImportGlossaryException.UnknownLanguage ->
+                getString(Res.string.import_glossary_error_language, e.language)
+            else -> getString(Res.string.import_glossary_error)
         }
     }
 }

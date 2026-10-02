@@ -17,6 +17,12 @@ export interface Resource {
   version: string;
 }
 
+export interface GlossaryInfo {
+  format_version: number;
+  code: string;
+  id?: string | null;
+}
+
 export interface Glossary {
   id: string | null;
   code: string;

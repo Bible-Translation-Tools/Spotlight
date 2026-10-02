@@ -30,6 +30,13 @@ import { Manifest } from "./resource.types";
 import { ErrorDetails, TokenRes, User, UserRes } from "./user.types";
 import { jwt, sign } from "hono/jwt";
 import validateEmoji from "./utils";
+import {
+  buildGlossaryArchive,
+  GLOSSARY_CONTENT,
+  GLOSSARY_INFO,
+  GLOSSARY_MANIFEST,
+  readGlossaryArchive,
+} from "./glossary.archive";
 import { v4 as uuidv4 } from "uuid";
 
 interface AppVariables extends JwtVariables {
@@ -225,16 +232,11 @@ app.post("/private/api/glossary", async (c) => {
 
     const decoder = new TextDecoder();
 
-    let glossary: Glossary | null = null;
     let manifest: Manifest | null = null;
 
     const mainArchive = unzipSync(new Uint8Array(zipArrayBuffer));
 
-    const glossaryFile = mainArchive["glossary.json"];
-    if (glossaryFile) {
-      const glossaryString = decoder.decode(glossaryFile);
-      glossary = JSON.parse(glossaryString);
-    }
+    let glossary = readGlossaryArchive(mainArchive);
 
     const resourceZipFilename = Object.keys(mainArchive).find((name) =>
       name.endsWith(".zip"),
@@ -254,7 +256,9 @@ app.post("/private/api/glossary", async (c) => {
         }
       }
 
-      await c.env.R2_BUCKET.put(resourceZipFilename, resourceZipFile, {
+      // Keyed by file name only: in the backup it sits under .apps/spotlight/source/
+      const resourceKey = resourceZipFilename.split("/").pop()!;
+      await c.env.R2_BUCKET.put(resourceKey, resourceZipFile, {
         httpMetadata: {
           contentType: "application/zip",
         },
@@ -263,7 +267,7 @@ app.post("/private/api/glossary", async (c) => {
 
     if (glossary == null || manifest == null) {
       throw new Error(
-        "Could not find glossary.json or resource.zip/manifest.yml",
+        `Could not find ${GLOSSARY_MANIFEST}, ${GLOSSARY_INFO}, ${GLOSSARY_CONTENT} or resource.zip/manifest.yaml`,
       );
     }
 
@@ -343,7 +347,7 @@ app.post("/private/api/glossary", async (c) => {
         phrase: phrase.phrase,
         spelling: phrase.spelling,
         description: phrase.description,
-        audio: phrase.audio,
+        audio: phrase.audio ?? "",
         glossaryId: glossaryId,
       }));
 
@@ -492,8 +496,6 @@ app.get("/public/api/glossary/:code", async (c) => {
   const code = c.req.param("code");
 
   try {
-    const encoder = new TextEncoder();
-
     // TODO There is a chance to have two or more glossaries with the same code but different IDs
     // Should we handle that case and return a list or just the first one?
     const glossary =
@@ -535,11 +537,11 @@ app.get("/public/api/glossary/:code", async (c) => {
       );
     }
     const resourceBytes = await resourceFile.arrayBuffer();
-    const glossaryJson = JSON.stringify(glossary, null, 4);
-    const mainZipContents = {
-      "glossary.json": encoder.encode(glossaryJson),
-      [resourceFilename]: new Uint8Array(resourceBytes),
-    };
+    const mainZipContents = buildGlossaryArchive(
+      glossary,
+      resourceFilename,
+      new Uint8Array(resourceBytes),
+    );
     const mainZipBytes = zipSync(mainZipContents);
     const filename = `glossary-${code}.zip`;
 

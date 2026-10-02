@@ -1,17 +1,11 @@
 package org.bibletranslationtools.glossary.data.api
 
-import kotlinx.serialization.Serializable
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@Serializable
+/** .apps/spotlight/glossary.yaml of a glossary backup: what the RC manifest has no place for. */
 data class ManifestGlossary(
+    @JsonProperty("format_version")
+    val formatVersion: Int? = null,
     val code: String,
-    val sourceLanguage: String,
-    val targetLanguage: String,
-    val version: Int,
-    val createdAt: String,
-    val updatedAt: String,
-    val resource: ManifestResource,
-    val phrases: List<ManifestPhrase>,
-    val pendingPhrases: List<ManifestPhrase> = emptyList(),
-    val id: String? = null,
+    val id: String? = null
 )
